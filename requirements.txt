@@ -1,0 +1,7 @@
+open_clip_torch
+Pillow
+torch
+Flask
+boto3
+tqdm
+qdrant_client
