@@ -8,3 +8,6 @@ qdrant_client
 python-dotenv
 transformers
 re
+langchain_huggingface
+fastembed
+sentence-transformers

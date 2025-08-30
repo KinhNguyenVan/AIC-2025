@@ -1,6 +1,9 @@
 import torch
 import open_clip
 from PIL import Image
+from langchain_huggingface import HuggingFaceEmbeddings
+from fastembed import SparseTextEmbedding
+
 device='cuda' if torch.cuda.is_available() else 'cpu'
 
 
@@ -22,3 +25,8 @@ class CLIPModel:
             text_features = self.model.encode_text(text_tokens)
             text_features = text_features / text_features.norm(dim=-1, keepdim=True)
         return text_features.cpu().numpy()
+    
+
+
+bgem3_embedding = HuggingFaceEmbeddings(model_name="BAAI/bge-m3")
+bm25_embedding = SparseTextEmbedding("Qdrant/bm25")

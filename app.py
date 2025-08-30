@@ -1,7 +1,15 @@
 from flask import Flask, request, jsonify, send_from_directory, render_template
 import os
 import random
+
+from sympy import limit
 from s3.s3_utils import get_neighbor_frames  # import hàm có sẵn
+from src.search.model import clip_embedding, bgem3_embedding, bm25_embedding
+from src.search.qdrant_db import image_qdrant_client, content_qdrant_client
+from src.search.search import image_search, content_search
+from src.rerank.rerank import rerank_images
+
+
 
 app = Flask(__name__)
 
@@ -35,67 +43,17 @@ def upload_images():
 def query_image():
     data = request.get_json()
     query = data.get("query", "")
+    image_results = image_search(query, clip_embedding, image_qdrant_client)
+    content_results = content_search(query, bgem3_embedding, bm25_embedding, content_qdrant_client)
 
-    # Giả lập output keyframes từ S3
-    keyframes = [
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001274.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001299.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001325.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001326.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001359.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001392.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001393.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001428.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001463.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001464.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001499.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001535.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001536.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001574.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001613.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001614.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001647.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001681.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001682.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001720.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001759.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001760.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001787.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001814.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001815.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001839.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001864.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001865.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001886.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001908.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001909.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001935.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001962.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001963.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/001989.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002015.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002016.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002050.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002085.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002086.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002109.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002132.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002133.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002159.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002185.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002186.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002214.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002242.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002243.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002349.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002456.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002457.webp",
-        "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com/Keyframes_L30_a/L30_V064/002596.webp"
-    ]
+    # Rerank the image results
+    reranked_results = rerank_images(image_results, content_results)
 
-    return jsonify({"images": keyframes})
+    # Prepare the final results for JSON response, take top 20
+    final_results = [f"{S3_BASE}/{res['image_url']}" for res in reranked_results]
 
-@app.route("/frames")
+    return jsonify({"images": final_results})
+
 def get_frames():
     url = request.args.get("url")
     before = int(request.args.get("prev", 25))
