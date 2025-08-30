@@ -10,11 +10,11 @@ def rerank_images(image_results, content_results):
     reranked_results = []
     for img in image_results:
         image_score = img.get("score", 0)
-        image_url = img.get("image_url", "")
+        image_path = img.get("path", "")
         
-        # Extract video name from image_url (e.g., 'L30_V064' from 'Keyframes_L30_a/L30_V064/001274.webp')
+        # Extract video name from image_path (e.g., 'L30_V064' from 'Keyframes_L30_a/L30_V064/001274.webp')
         try:
-            video_name = os.path.normpath(image_url).split(os.sep)[-2]
+            video_name = os.path.normpath(image_path).split(os.sep)[-2]
         except IndexError:
             video_name = None
 

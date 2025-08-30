@@ -6,8 +6,10 @@ def image_search(text, embedding, qdrant_client):
     search_result = qdrant_client.search(
         collection_name="image_clip_vectors",
         query_vector=text_features.squeeze().tolist(),
-        limit=20,
-        with_payload=True
+        limit=1000,
+        with_payload=True,
+        search_params=models.SearchParams(exact=True),
+        timeout=60
     )
     results = []
     for hit in search_result:
@@ -31,12 +33,12 @@ def content_search(text,bgem3_embedding,bm25_embedding,client):
         models.Prefetch(
             query=dense_q,
             using="bge-m3",
-            limit=50,
+            limit=100,
         ),
         models.Prefetch(
             query=sparse_q,
             using="bm25",
-            limit=50,
+            limit=100,
         ),
     ]
     results = client.query_points(
@@ -46,7 +48,7 @@ def content_search(text,bgem3_embedding,bm25_embedding,client):
                 fusion=models.Fusion.RRF,
             ),
             with_payload=True,
-            limit=50,
+            limit=100,
         )
     video_dict = {}
     for point in results.points:

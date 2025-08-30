@@ -3,7 +3,7 @@ import os
 import random
 
 from sympy import limit
-from s3.s3_utils import get_neighbor_frames  # import hàm có sẵn
+from s3.s3_utils import get_neighbor_frames 
 from src.search.model import clip_embedding, bgem3_embedding, bm25_embedding
 from src.search.qdrant_db import image_qdrant_client, content_qdrant_client
 from src.search.search import image_search, content_search
@@ -52,12 +52,13 @@ def query_image():
         reranked_results = rerank_images(image_results, content_results)
 
         # Prepare the final results for JSON response, take top 20
-        final_results = [f"{S3_BASE}/{res['image_url']}" for res in reranked_results]
+        final_results = [f"{S3_BASE}/{res['path']}" for res in reranked_results]
 
         return jsonify({"images": final_results})
     else:
-        return jsonify({"images": [f"{S3_BASE}/{res['image_url']}" for res in image_results]})
+        return jsonify({"images": [f"{S3_BASE}/{res['path']}" for res in image_results]})
 
+@app.route("/frames", methods=["GET"])
 def get_frames():
     url = request.args.get("url")
     before = int(request.args.get("prev", 25))
