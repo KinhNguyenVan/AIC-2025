@@ -177,11 +177,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === "Enter") {
             const query = queryInput.value.trim();
             if (!query) return;
+            const flag = document.getElementById("flagCheckbox").checked; // true/false
 
             const res = await fetch("/query", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query })
+                body: JSON.stringify({
+                    query: query,
+                    flag: flag
+                })
             });
             const data = await res.json();
 

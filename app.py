@@ -43,16 +43,20 @@ def upload_images():
 def query_image():
     data = request.get_json()
     query = data.get("query", "")
+    flag = data.get("flag", False)
     image_results = image_search(query, clip_embedding, image_qdrant_client)
-    content_results = content_search(query, bgem3_embedding, bm25_embedding, content_qdrant_client)
+    if flag:
+        content_results = content_search(query, bgem3_embedding, bm25_embedding, content_qdrant_client)
 
-    # Rerank the image results
-    reranked_results = rerank_images(image_results, content_results)
+        # Rerank the image results
+        reranked_results = rerank_images(image_results, content_results)
 
-    # Prepare the final results for JSON response, take top 20
-    final_results = [f"{S3_BASE}/{res['image_url']}" for res in reranked_results]
+        # Prepare the final results for JSON response, take top 20
+        final_results = [f"{S3_BASE}/{res['image_url']}" for res in reranked_results]
 
-    return jsonify({"images": final_results})
+        return jsonify({"images": final_results})
+    else:
+        return jsonify({"images": [f"{S3_BASE}/{res['image_url']}" for res in image_results]})
 
 def get_frames():
     url = request.args.get("url")
