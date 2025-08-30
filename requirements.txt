@@ -5,3 +5,6 @@ Flask
 boto3
 tqdm
 qdrant_client
+python-dotenv
+transformers
+re

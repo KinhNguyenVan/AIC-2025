@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web ML content-based image retrieval demo</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container2 {
+            flex: 1;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+
+        /* Make DB images neat */
+        #imageContainer img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .image-wrapper {
+            position: relative;
+        }
+
+        .checkbox-overlay {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            z-index: 2;
+        }
+
+        .order-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 123, 255, 0.85);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #pageWrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar starts closed (width=0) */
+        #frameSidebar {
+            overflow-y: auto;
+            white-space: normal;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="pageWrapper" class="d-flex">
+        <!-- Main content -->
+        <div id="mainContent" class="flex-grow-1">
+            <div class="container2">
+                <nav class="navbar bg-body-tertiary mb-3">
+                    <div class="container">
+                        <span class="navbar-brand mb-0 h1">Web ML content-based image retrieval demo</span>
+                    </div>
+                </nav>
+
+                <div class="container">
+                    <div class="row">
+                        <!-- Search -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="bi bi-image"></i> Image Search</h5>
+                                    <!-- Text input with mic button -->
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" placeholder="Search by text...">
+                                        <button class="btn btn-outline-secondary" type="button">
+                                            <i class="bi bi-mic"></i>
+                                        </button>
+                                    </div>
+                                    <div id="resultrow" class="row d-none">
+                                        <div class="col-6">
+                                            <p>Query image:</p>
+                                            <div id="imgbox1"></div>
+                                        </div>
+                                        <div class="col-6">
+                                            <p>Most similar image:</p>
+                                            <div id="imgbox2"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Upload -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="bi bi-images"></i> Upload Images to DB</h5>
+                                    <div class="mb-3">
+                                        <input class="form-control" type="file" id="imageInput" multiple>
+                                    </div>
+                                    <div id="result"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DB Display -->
+                    <div class="mt-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-database"></i> Images results 
+                                </h5>
+                                <input type="text" id="filenameInput" class="form-control mb-2" placeholder="Enter filename (default: results.csv)">
+                                <input type="text" id="answerInput" class="form-control mb-2" placeholder="Enter answer (for task 2)">
+                                <button id="exportCsvBtn" class="btn btn-success mb-2">
+                                    <i class="bi bi-download"></i> Export CSV
+                                </button>
+                                <div class="row row-cols-2 row-cols-sm-3 row-cols-md-5 g-2" id="imageContainer"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar (hidden by default) -->
+        <!-- <div id="frameSidebar" class="bg-light border-start shadow p-3 overflow-auto" style="width:0; transition:width 0.3s;">
+            <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                <h5 id="sidebarTitle">Frame Context</h5>
+                <button id="toggleSidebarBtn" class="btn btn-sm btn-outline-secondary">&times;</button>
+            </div>
+            <div id="currentFrame" class="mb-3"></div>
+            <div id="sidebarImages" class="row row-cols-2 g-2"></div>
+        </div> -->
+        <div id="frameSidebar" class="position-fixed top-0 end-0 bg-light shadow h-100" 
+            style="width:0px; transition:0.3s; overflow:hidden;">
+
+            <!-- Toggle Button (always visible strip) -->
+            <div class="d-flex justify-content-center align-items-center h-100 border-start" style="width:40px; float:left;">
+                <button id="toggleSidebarBtn" class="btn btn-sm btn-outline-secondary">&raquo;</button>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div id="sidebarContent" 
+                style="width:360px; float:left; padding:10px; display:none; height:100%; overflow-y:auto;">
+                <div class="d-flex justify-content-between align-items-center border-bottom mb-2">
+                    <h6 class="mb-0">Frames</h6>
+                </div>
+                <div id="currentFrame" class="mb-2"></div>
+                <div id="sidebarImages" class="row row-cols-2 g-2"></div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="footer">
+        &copy; 2023 Demo
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
