@@ -27,6 +27,6 @@ class CLIPModel:
         return text_features.cpu().numpy()
     
 
-
+clip_embedding = CLIPModel()
 bgem3_embedding = HuggingFaceEmbeddings(model_name="BAAI/bge-m3")
 bm25_embedding = SparseTextEmbedding("Qdrant/bm25")
