@@ -6,10 +6,10 @@ text = """Một người đàn ông mặc vest xanh,
 áo sơ mi trắng và cà vạt đỏ đang đứng trước bảng trắng/khung 
 nền có nhiều công thức toán học"""
 
-text_features = embedding.encode_text([text])
+text_features = embedding.encode_text(text)
 search_result = qdrant_client.search(
     collection_name="image_clip_vectors",
-    query_vector=text_features[0].tolist(),
+    query_vector=text_features.tolist(),
     limit=10
 )
 for hit in search_result:
