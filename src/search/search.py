@@ -6,9 +6,9 @@ def image_search(text, embedding, qdrant_client):
     search_result = qdrant_client.search(
         collection_name="image_clip_vectors",
         query_vector=text_features.squeeze().tolist(),
-        limit=1000,
+        limit=500000,
         with_payload=True,
-        search_params=models.SearchParams(exact=True),
+        search_params={"exact":True},
         timeout=60
     )
     results = []

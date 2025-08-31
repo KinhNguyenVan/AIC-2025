@@ -177,6 +177,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === "Enter") {
             const query = queryInput.value.trim();
             if (!query) return;
+
+            // 🔹 Clear hết tickbox và reset selectedImages
+            selectedImages = [];
+            document.querySelectorAll(".selectImg").forEach(cb => {
+                cb.checked = false;
+                const badge = cb.closest(".card").querySelector(".order-badge");
+                if (badge) badge.classList.add("d-none");
+            });
+
             const flag = document.getElementById("flagCheckbox").checked; // true/false
 
             const res = await fetch("/query", {
@@ -187,6 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     flag: flag
                 })
             });
+
             const data = await res.json();
 
             renderImages(data.images); // hiển thị kết quả query trong imageContainer
