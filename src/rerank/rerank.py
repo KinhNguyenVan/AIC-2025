@@ -10,7 +10,7 @@ def rerank_images(image_results, content_results):
     reranked_results = []
     for img in image_results:
         image_score = img.get("score", 0)
-        image_url = img.get("image_url", "")
+        image_url = img.get("path", "")
         
         # Extract video name from image_url (e.g., 'L30_V064' from 'Keyframes_L30_a/L30_V064/001274.webp')
         try:

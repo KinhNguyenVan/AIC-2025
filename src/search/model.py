@@ -26,7 +26,3 @@ class CLIPModel:
             text_features = text_features / text_features.norm(dim=-1, keepdim=True)
         return text_features.cpu().numpy()
     
-
-
-bgem3_embedding = HuggingFaceEmbeddings(model_name="BAAI/bge-m3")
-bm25_embedding = SparseTextEmbedding("Qdrant/bm25")
