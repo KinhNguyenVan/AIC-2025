@@ -146,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
             selectedImages = selectedImages.filter(u => u !== url);
         }
 
-        // Cập nhật số thứ tự cho tất cả ảnh đã tick
+        // Cập nhật badge
         document.querySelectorAll(".selectImg").forEach(c => {
             const b = c.closest(".card").querySelector(".order-badge");
             const idx = selectedImages.indexOf(c.dataset.url);
@@ -157,7 +157,58 @@ document.addEventListener("DOMContentLoaded", () => {
                 b.classList.add("d-none");
             }
         });
+
+        // 🔹 Update sidebar trái
+        renderSelectedSidebar();
     }
+
+
+    function renderSelectedSidebar() {
+        const container = document.getElementById("selectedList");
+        container.innerHTML = "";
+
+        selectedImages.forEach((url, idx) => {
+            let prefix = url.split('/').slice(-2).join('/');
+            let div = document.createElement("div");
+            div.className = "col";
+            div.innerHTML = `
+                <div class="card">
+                    <img src="${url}" class="card-img-top" style="height:60px; object-fit:cover;">
+                    <div class="card-body p-1 text-center">
+                        <input type="checkbox" class="form-check-input selectedSidebarCb" 
+                            data-url="${url}" checked>
+                        <small>${idx + 1}. ${prefix}</small>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        // Gắn event cho tickbox trong sidebar
+        document.querySelectorAll(".selectedSidebarCb").forEach(cb => {
+            cb.addEventListener("change", sidebarCheckboxHandler);
+        });
+    }
+
+    function sidebarCheckboxHandler(e) {
+        const url = e.target.dataset.url;
+        if (!e.target.checked) {
+            // Bỏ chọn: remove khỏi selectedImages
+            selectedImages = selectedImages.filter(u => u !== url);
+
+            // Đồng bộ: bỏ tick trong grid chính nếu có
+            const gridCb = document.querySelector(`.selectImg[data-url="${url}"]`);
+            if (gridCb) {
+                gridCb.checked = false;
+                gridCb.dispatchEvent(new Event("change")); // gọi lại logic badge
+            }
+
+            // Update lại sidebar
+            renderSelectedSidebar();
+        }
+    }
+
+
 
     toggleBtn.addEventListener("click", () => {
         if (sidebar.style.width === "40px") {

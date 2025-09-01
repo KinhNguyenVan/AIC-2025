@@ -78,8 +78,15 @@
 
 <body>
     <div id="pageWrapper" class="d-flex">
+        <!-- Sidebar trái: Selected frames -->
+        <div id="leftSidebar" class="position-fixed top-0 start-0 bg-light shadow h-100 p-2" 
+            style="width:200px; overflow-y:auto;">
+            <h6>Selected</h6>
+            <div id="selectedList" class="row row-cols-1 g-2"></div>
+        </div>
+
         <!-- Main content -->
-        <div id="mainContent" class="flex-grow-1">
+        <div id="mainContent" class="flex-grow-1" style="margin-left:200px;">
             <div class="container2">
                 <nav class="navbar bg-body-tertiary mb-3">
                     <div class="container">
