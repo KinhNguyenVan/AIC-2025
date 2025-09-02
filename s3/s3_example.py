@@ -33,7 +33,7 @@ from s3_utils import get_public_url, upload_file, upload_many, upload_folder, ge
 
 
 # List all files
-# get_list(prefix="Keyframes_L30_a")
+get_list(prefix="Keyframes_L30_a")
 
 
 
@@ -50,5 +50,5 @@ from s3_utils import get_public_url, upload_file, upload_many, upload_folder, ge
 # Get presigned URL (valid 10 mins)
 #get_presigned_url("JUSTIPH.png", expiry=600)
 
-neighbors = get_neighbor_frames("Keyframes_L30_a/L30_V064/001326.webp", before=3, after=3)
-print("Neighbor frames:", neighbors)
+# neighbors = get_neighbor_frames("Keyframes_L30_a/L30_V064/001326.webp", before=3, after=3)
+# print("Neighbor frames:", neighbors)
