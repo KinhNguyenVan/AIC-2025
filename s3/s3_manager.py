@@ -121,27 +121,26 @@ class S3Manager:
             print(f"❌ Error: {e}")
 
     def list_files(self, prefix=""):
-        """List all files in the S3 bucket (optionally filtered by prefix). Handles >1000 results."""
+        """List all files in the S3 bucket with size. Handles >1000 results."""
         try:
             paginator = self.s3_client.get_paginator("list_objects_v2")
             files = []
-            
+
             for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
                 if "Contents" in page:
                     for obj in page["Contents"]:
-                        files.append(obj["Key"])
-                        print(" -", self._public_url(obj["Key"]))
+                        files.append({"Key": obj["Key"], "Size": obj["Size"]})
 
             if files:
-                print(f"📂 Found {len(files)} files.")
+                print(f"📂 Found {len(files)} files (total size: {sum(f['Size'] for f in files)} bytes).")
             else:
                 print("📂 Bucket is empty.")
-            
             return files
 
         except ClientError as e:
             print(f"❌ Error: {e}")
             return []
+
 
     def get_neighbor_frames(self, current_key: str, before: int = 25, after: int = 25):
         """

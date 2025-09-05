@@ -33,7 +33,7 @@ from s3_utils import get_public_url, upload_file, upload_many, upload_folder, ge
 
 
 # List all files
-get_list(prefix="Keyframes_L30_a")
+get_list(prefix="Keyframes_K10")
 
 
 
