@@ -73,6 +73,35 @@
             overflow-y: auto;
             white-space: normal;
         }
+
+        #contextMenu {
+            min-width: 200px;
+            background-color: #fefefe;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 8px 0;
+            z-index: 2000;
+            display: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #contextMenu .dropdown-item {
+            padding: 10px 16px;
+            font-size: 14px;
+            color: #333;
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        #contextMenu .dropdown-item:hover {
+            background-color: #f0f0f0;
+            color: #000;
+        }
     </style>
 </head>
 
@@ -85,6 +114,21 @@
             <div id="selectedList" class="row row-cols-1 g-2"></div>
         </div>
 
+        <!-- Context menu -->
+        <div id="contextMenu" class="position-absolute">
+            <button class="dropdown-item" id="viewFramesBtn">
+                📽️ Xem 25 frames trước/sau
+            </button>
+            <button class="dropdown-item" id="copyUrlBtn">
+                🔗 Copy URL
+            </button>
+            <button class="dropdown-item" id="openVideoBtn">
+                ▶️ Mở video gốc trong tab mới
+            </button>    
+        </div>
+
+
+
         <!-- Main content -->
         <div id="mainContent" class="flex-grow-1" style="margin-left:200px;">
             <div class="container2">
@@ -95,16 +139,15 @@
                 </nav>
 
                 <div class="container">
-                    <div class="row">
+                    <div class="row g-3">
                         <!-- Search -->
-                        <div class="col-md-6">
-                            <div class="card">
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 shadow-sm">
                                 <div class="card-body">
                                     <h5 class="card-title"><i class="bi bi-image"></i> Image Search</h5>
-                                    <!-- Text input with mic button -->
                                     <div class="input-group mb-3">
                                         <input type="text" class="form-control" placeholder="Search by text...">
-                                        <!-- Checkbox -->
+                                        <input type="text" id="flagInput" class="form-control" placeholder="Enter flag...">
                                         <div class="input-group-text">
                                             <input id="flagCheckbox" class="form-check-input mt-0" type="checkbox">
                                         </div>
@@ -114,30 +157,83 @@
                                     </div>
                                     <div id="resultrow" class="row d-none">
                                         <div class="col-6">
-                                            <p>Query image:</p>
+                                            <p class="fw-semibold mb-1">Query image:</p>
                                             <div id="imgbox1"></div>
                                         </div>
                                         <div class="col-6">
-                                            <p>Most similar image:</p>
+                                            <p class="fw-semibold mb-1">Most similar image:</p>
                                             <div id="imgbox2"></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <!-- Upload -->
-                        <div class="col-md-6">
-                            <div class="card">
+
+                        <!-- Search Frame by Video + Frame -->
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 shadow-sm">
                                 <div class="card-body">
-                                    <h5 class="card-title"><i class="bi bi-images"></i> Upload Images to DB</h5>
-                                    <div class="mb-3">
-                                        <input class="form-control" type="file" id="imageInput" multiple>
+                                    <h5 class="card-title"><i class="bi bi-search"></i> Find Frame</h5>
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">Video path</span>
+                                        <input type="text" id="videoInput" class="form-control" placeholder="e.g. L21_V002">
                                     </div>
-                                    <div id="result"></div>
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">Frame</span>
+                                        <input type="text" id="frameInput" class="form-control" placeholder="e.g. 000123">
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button id="showFrameBtn" class="btn btn-primary flex-fill">
+                                            <i class="bi bi-image"></i> Show Frame
+                                        </button>
+                                        <button id="openVideoBtn2" class="btn btn-secondary flex-fill">
+                                            <i class="bi bi-youtube"></i> Open Video
+                                        </button>
+                                    </div>
+                                    <div id="frameResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Generate CSV from Frames -->
+                        <div class="col-12 col-md-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="bi bi-file-earmark-spreadsheet"></i> Generate CSV</h5>
+
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">Filename</span>
+                                        <input type="text" id="csvFilenameInput" class="form-control" placeholder="result.csv">
+                                    </div>
+
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">Video</span>
+                                        <input type="text" id="videoNameInput" class="form-control" placeholder="L26_V072">
+                                    </div>
+
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">Seconds</span>
+                                        <input type="text" id="secondsInput" class="form-control" placeholder="e.g. 89.4, 4:20.5">
+                                    </div>
+
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">Rows</span>
+                                        <input type="number" id="rowCountInput" class="form-control" value="2">
+                                    </div>
+
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">Offset</span>
+                                        <input type="number" id="offsetInput" class="form-control" value="3">
+                                    </div>
+
+                                    <button id="generateCsvBtn" class="btn btn-success w-100">
+                                        <i class="bi bi-download"></i> Export CSV
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
+
 
                     <!-- DB Display -->
                     <div class="mt-3">
@@ -151,6 +247,11 @@
                                 <button id="exportCsvBtn" class="btn btn-success mb-2">
                                     <i class="bi bi-download"></i> Export CSV
                                 </button>
+                                <div class="text-center my-3 d-none" id="loadingSpinner">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
                                 <div class="row row-cols-2 row-cols-sm-3 row-cols-md-5 g-2" id="imageContainer"></div>
                             </div>
                         </div>
@@ -160,14 +261,6 @@
         </div>
 
         <!-- Sidebar (hidden by default) -->
-        <!-- <div id="frameSidebar" class="bg-light border-start shadow p-3 overflow-auto" style="width:0; transition:width 0.3s;">
-            <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-                <h5 id="sidebarTitle">Frame Context</h5>
-                <button id="toggleSidebarBtn" class="btn btn-sm btn-outline-secondary">&times;</button>
-            </div>
-            <div id="currentFrame" class="mb-3"></div>
-            <div id="sidebarImages" class="row row-cols-2 g-2"></div>
-        </div> -->
         <div id="frameSidebar" class="position-fixed top-0 end-0 bg-light shadow h-100" 
             style="width:0px; transition:0.3s; overflow:hidden;">
 
@@ -183,6 +276,14 @@
                     <h6 class="mb-0">Frames</h6>
                 </div>
                 <div id="currentFrame" class="mb-2"></div>
+
+                <!-- 🔄 Spinner để hiển thị khi đang tải frames -->
+                <div id="sidebarSpinner" class="text-center my-2 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                
                 <div id="sidebarImages" class="row row-cols-2 g-2"></div>
             </div>
         </div>
