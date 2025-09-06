@@ -29,5 +29,5 @@ cf = CloudFrontManager("d1zgby2rss028i.cloudfront.net", s3_manager=s3)
 # cf.download_file("Keyframes_L28_a/L28_V016/028779.webp", "downloads/028779.webp")
 
 # Download a whole folder
-cf.download_folder("Keyframes_K07/", "downloads/L28_V016")
+cf.download_folder("Keyframes_K07/", "D:/s3Keyframes_K07")
 
