@@ -15,7 +15,7 @@ def rerank_images(image_results, content_results):
 
     # Sắp xếp nội dung theo điểm số giảm dần
     image_results = deduplicate_and_sort(image_results, payload_key="path")
-    print(image_results)
+   
 
     # Nhóm frames theo video
     video_groups = defaultdict(list)

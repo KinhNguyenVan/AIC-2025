@@ -50,12 +50,11 @@ def upload_images():
 async def query_image():
     data = request.get_json()
     query = data.get("query", "")
-    flag = data.get("flag", False)
     flagValue = data.get("flagValue", "")
     if flagValue is not None:
         # 3. Nếu flag True thì chạy content search song song
         gemini_task = asyncio.to_thread(gemini_model.generate_content, query)
-        content_task = asyncio.to_thread(content_search, query, bgem3_embedding, bm25_embedding, content_qdrant_client)
+        content_task = asyncio.to_thread(content_search, flagValue, bgem3_embedding, bm25_embedding, content_qdrant_client)
         eng_query, content_results = await asyncio.gather(
             gemini_task, content_task
         )
