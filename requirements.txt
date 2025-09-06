@@ -11,3 +11,6 @@ re
 langchain_huggingface
 fastembed
 sentence-transformers
+flask[async]
+google-generative-ai
+
