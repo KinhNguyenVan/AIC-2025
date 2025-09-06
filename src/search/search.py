@@ -1,14 +1,37 @@
 from qdrant_client.http.models import Distance, VectorParams
 from qdrant_client.http import models
 
-def image_search(text, embedding, qdrant_client):
+def image_search_1(text, embedding, qdrant_client_1):
     text_features = embedding.encode_text(text)
-    search_result = qdrant_client.search(
+    search_result = qdrant_client_1.search(
         collection_name="image_clip_vectors",
         query_vector=text_features.squeeze().tolist(),
-        limit=500000,
+        limit=500,
         with_payload=True,
-        search_params={"exact":True},
+        search_params=models.SearchParams(
+        hnsw_ef=400,
+        exact=False
+        ),
+        timeout=60
+    )
+    results = []
+    for hit in search_result:
+        payload = hit.payload
+        payload['score'] = hit.score
+        results.append(payload)
+    return results
+
+def image_search_2(text, embedding, qdrant_client_2):
+    text_features = embedding.encode_text(text)
+    search_result = qdrant_client_2.search(
+        collection_name="image_clip_vectors",
+        query_vector=text_features.squeeze().tolist(),
+        limit=500,
+        with_payload=True,
+        search_params=models.SearchParams(
+        hnsw_ef=400,
+        exact=False
+    ),
         timeout=60
     )
     results = []

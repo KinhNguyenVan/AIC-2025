@@ -1,33 +1,49 @@
 import os
+from collections import defaultdict
+from src.utils import deduplicate_and_sort
+
 
 def rerank_images(image_results, content_results):
     """
-    Reranks image results based on content scores.
-    New score = image_score + image_score * content_score.
+    Rerank image results by grouping frames by video.
+    - First sort videos by content_score (descending).
+    - Then, within each video group, sort frames by image_score (descending).
     """
+
+    # Map: video_name -> content_score
     content_scores = {item['name']: item['score'] for item in content_results}
-    
-    reranked_results = []
+
+    # Sắp xếp nội dung theo điểm số giảm dần
+    image_results = deduplicate_and_sort(image_results, payload_key="path")
+    print(image_results)
+
+    # Nhóm frames theo video
+    video_groups = defaultdict(list)
     for img in image_results:
         image_score = img.get("score", 0)
         image_path = img.get("path", "")
-        
-        # Extract video name from image_path (e.g., 'L30_V064' from 'Keyframes_L30_a/L30_V064/001274.webp')
+
+        # Lấy tên video (vd: "L30_V064")
         try:
             video_name = os.path.normpath(image_path).split(os.sep)[-2]
         except IndexError:
             video_name = None
 
-        content_score = content_scores.get(video_name, 0)
-        
-        # Apply reranking formula
-        new_score = image_score + (image_score * content_score)
-        
-        reranked_img = img.copy()
-        reranked_img["score"] = new_score
-        reranked_results.append(reranked_img)
-        
-    # Sort by the new score in descending order
-    reranked_results.sort(key=lambda x: x['score'], reverse=True)
-    
+        video_groups[video_name].append(img)
+
+    # Sắp xếp video theo content_score giảm dần
+    sorted_videos = sorted(
+        video_groups.keys(),
+        key=lambda v: content_scores.get(v, 0),
+        reverse=True
+    )
+
+    # Rerank kết quả
+    reranked_results = []
+    for v in sorted_videos:
+        frames = video_groups[v]
+        # Sắp xếp các frame trong video theo image_score giảm dần
+        frames_sorted = sorted(frames, key=lambda x: x.get("score", 0), reverse=True)
+        reranked_results.extend(frames_sorted)
+
     return reranked_results
