@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify, send_from_directory, render_template
 import os
 import random
 import asyncio
+import json
+
 
 from sympy import limit
 from s3.s3_utils import get_neighbor_frames  # import hàm có sẵn
@@ -20,6 +22,9 @@ CLOUDFRONT_BASE = "https://d1zgby2rss028i.cloudfront.net"
 # Folder for demo images
 IMAGE_FOLDER = os.path.join("static", "images")
 os.makedirs(IMAGE_FOLDER, exist_ok=True)
+
+with open("url_fps_mapping.json") as f:
+    url_fps_mapping = json.load(f)
 
 @app.route("/")
 def home():
@@ -46,7 +51,8 @@ async def query_image():
     data = request.get_json()
     query = data.get("query", "")
     flag = data.get("flag", False)
-    if flag:
+    flagValue = data.get("flagValue", "")
+    if flagValue is not None:
         # 3. Nếu flag True thì chạy content search song song
         gemini_task = asyncio.to_thread(gemini_model.generate_content, query)
         content_task = asyncio.to_thread(content_search, query, bgem3_embedding, bm25_embedding, content_qdrant_client)
@@ -94,6 +100,11 @@ def get_frames():
         return jsonify({"frames": neighbors_full})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/url_fps_mapping.json")
+def get_video_mapping():
+    return send_from_directory(".", "url_fps_mapping.json")
+
 
 if __name__ == "__main__":
     app.run(debug=True)

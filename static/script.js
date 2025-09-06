@@ -1,5 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const imageInput = document.getElementById("imageInput");
+    let videoMapping = {};
+
+    async function loadVideoMapping() {
+        try {
+            const res = await fetch("/url_fps_mapping.json");
+            videoMapping = await res.json();
+        } catch (err) {
+            console.error("Failed to load url_fps_mapping.json", err);
+        }
+    }
+
+    loadVideoMapping();
+
+    // const imageInput = document.getElementById("imageInput");
     const imageContainer = document.getElementById("imageContainer");
     const exportBtn = document.getElementById("exportCsvBtn");
     const queryInput = document.querySelector(".input-group input");
@@ -11,24 +24,77 @@ document.addEventListener("DOMContentLoaded", () => {
     // Lưu danh sách ảnh được chọn theo thứ tự tick
     let selectedImages = [];
 
-    // Upload images (demo DB)
-    imageInput.addEventListener("change", async () => {
-        const files = imageInput.files;
-        const formData = new FormData();
-        for (let file of files) {
-            formData.append("images", file);
+
+    const videoInput = document.getElementById("videoInput");
+    const frameInput = document.getElementById("frameInput");
+    const frameResult = document.getElementById("frameResult");
+    const showFrameBtn = document.getElementById("showFrameBtn");
+    const openVideoBtn2 = document.getElementById("openVideoBtn2");
+
+    showFrameBtn.addEventListener("click", async () => {
+        const video = videoInput.value.trim();
+        const frame = frameInput.value.trim();
+
+        if (!video || !frame) {
+            alert("Please enter both video name and frame number!");
+            return;
         }
-        await fetch("/upload", { method: "POST", body: formData });
-        loadDB();
+
+        // Build frame URL (CloudFront hoặc S3)
+        const frameUrl = `https://d1zgby2rss028i.cloudfront.net/${video}/${frame}.webp`;
+
+        // Hiện kết quả
+        frameResult.innerHTML = `
+            <div class="card">
+                <img src="${frameUrl}" class="card-img-top" style="max-height:200px; object-fit:contain;">
+                <div class="card-body p-2 text-center">
+                    <small>${video}/${frame}.webp</small>
+                </div>
+            </div>
+        `;
+
+        // Đồng thời renderImages để có thể tick/select
+        // renderImages([frameUrl]);
     });
 
-    // Load DB images (ban đầu hiển thị DB local)
-    async function loadDB() {
-        const res = await fetch("/db");
-        const data = await res.json();
-        renderImages(data.images.map(name => `/image/${name}`));
-    }
-    loadDB();
+    openVideoBtn2.addEventListener("click", async () => {
+        const video = videoInput.value.trim();
+        const frame = frameInput.value.trim();
+
+        if (!video || !frame) {
+            alert("Please enter both video name and frame number!");
+            return;
+        }
+
+        // Lấy video_name từ cuối đường dẫn: L30_V001
+        const videoName = video.split("/").pop();
+        console.log("Video name:", videoName);
+
+        try {
+            const mapping = Array.isArray(videoMapping) 
+                ? videoMapping.find(m => m.video_name === videoName)
+                : null;
+
+            if (!mapping) {
+                alert(`Không tìm thấy video_name ${videoName} trong url_fps_mapping.json`);
+                return;
+            }
+
+            const frameNumber = parseInt(frame, 10);
+            const fps = mapping.fps || 30;
+            const seconds = Math.floor(frameNumber / fps);
+
+            // Mở link youtube với timestamp
+            const youtubeUrl = `${mapping.watch_url}&t=${seconds}s`;
+            window.open(youtubeUrl, "_blank");
+        } catch (err) {
+            console.error(err);
+            alert("Failed to open video!");
+        }
+    });
+
+
+
 
     // Hàm render ảnh ra imageContainer
     function renderImages(urls) {
@@ -61,17 +127,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Gắn sự kiện right-click (context menu) cho ảnh
         document.querySelectorAll(".main-img").forEach(img => {
-            img.addEventListener("contextmenu", async (e) => {
+            img.addEventListener("contextmenu", (e) => {
                 e.preventDefault();
-                const url = img.dataset.url;
-
-                // Giả sử có API getFrames(url, nPrev, nNext)
-                const res = await fetch(`/frames?url=${encodeURIComponent(url)}&prev=25&next=25`);
-                const data = await res.json(); // data.frames = [list of frame URLs]
-
-                renderSidebar(data.frames, url);
+                showContextMenu(e.pageX, e.pageY, img.dataset.url);
             });
         });
+
 
         exportBtn.classList.remove("d-none");
     }
@@ -114,19 +175,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Gắn sự kiện right-click cho ảnh trong sidebar
         document.querySelectorAll(".side-img").forEach(img => {
-            img.addEventListener("contextmenu", async (e) => {
+            img.addEventListener("contextmenu", (e) => {
                 e.preventDefault();
-                const url = img.dataset.url;
-
-                // Gọi API lấy 25 frames trước/sau
-                const res = await fetch(`/frames?url=${encodeURIComponent(url)}&prev=25&next=25`);
-                const data = await res.json();
-
-                // Render lại sidebar với ảnh này làm current
-                renderSidebar(data.frames, url);
+                showContextMenu(e.pageX, e.pageY, img.dataset.url);
             });
         });
     }
+
+    const contextMenu = document.getElementById("contextMenu");
+    const viewFramesBtn = document.getElementById("viewFramesBtn");
+    const copyUrlBtn = document.getElementById("copyUrlBtn");
+    let contextTargetUrl = null; // lưu URL đang right click
+
+    function showContextMenu(x, y, url) {
+        contextTargetUrl = url;
+        contextMenu.style.left = `${x}px`;
+        contextMenu.style.top = `${y}px`;
+        contextMenu.style.display = "block";
+    }
+
+    function hideContextMenu() {
+        contextMenu.style.display = "none";
+    }
+
+    // Click ngoài menu sẽ ẩn nó
+    document.addEventListener("click", () => hideContextMenu());
+
+    // Nút xem frames
+    viewFramesBtn.addEventListener("click", async () => {
+        if (!contextTargetUrl) return;
+        hideContextMenu();
+
+        const spinner = document.getElementById("sidebarSpinner");
+        const container = document.getElementById("sidebarImages");
+        container.innerHTML = ""; // xoá ảnh cũ
+        spinner.classList.remove("d-none"); // hiện spinner
+
+        try {
+            const res = await fetch(`/frames?url=${encodeURIComponent(contextTargetUrl)}&prev=25&next=25`);
+            const data = await res.json();
+
+            renderSidebar(data.frames, contextTargetUrl);
+        } catch (err) {
+            console.error("Lỗi khi load frames:", err);
+            alert("Không thể tải frames!");
+        } finally {
+            spinner.classList.add("d-none"); // ẩn spinner
+        }
+    });
+
+
+    // Nút copy URL
+    copyUrlBtn.addEventListener("click", () => {
+        if (!contextTargetUrl) return;
+        navigator.clipboard.writeText(contextTargetUrl);
+        hideContextMenu();
+    });
+
 
     function bindCheckboxEvents() {
         document.querySelectorAll(".selectImg").forEach(cb => {
@@ -209,6 +314,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    const openVideoBtn = document.getElementById("openVideoBtn");
+
+    openVideoBtn.addEventListener("click", () => {
+        if (!contextTargetUrl) return;
+        hideContextMenu();
+
+        // Lấy video_name từ URL, ví dụ .../L30_V001/000037.webp
+        const parts = contextTargetUrl.split("/");
+        const videoName = parts[parts.length - 2]; // L30_V001
+        const fileName = parts[parts.length - 1];  // 000037.webp
+
+        const mapping = Array.isArray(videoMapping) 
+            ? videoMapping.find(m => m.video_name === videoName)
+            : null;
+
+        if (!mapping) {
+            alert(`Không tìm thấy video_name ${videoName} trong url_fps_mapping.json`);
+            return;
+        }
+
+        // Lấy frame số
+        const frameNumber = parseInt(fileName.replace(/\D/g, ""), 10);
+        const fps = mapping.fps || 30;
+        const seconds = Math.floor(frameNumber / fps);
+
+        // Mở link youtube với timestamp
+        const youtubeUrl = `${mapping.watch_url}&t=${seconds}s`;
+        window.open(youtubeUrl, "_blank");
+    });
+
 
     toggleBtn.addEventListener("click", () => {
         if (sidebar.style.width === "40px") {
@@ -229,7 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const query = queryInput.value.trim();
             if (!query) return;
 
-            // 🔹 Clear hết tickbox và reset selectedImages
+            // Clear tickbox
             selectedImages = [];
             document.querySelectorAll(".selectImg").forEach(cb => {
                 cb.checked = false;
@@ -237,22 +372,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (badge) badge.classList.add("d-none");
             });
 
-            const flag = document.getElementById("flagCheckbox").checked; // true/false
+            const flagValue = document.getElementById("flagInput").value.trim();
+            const flag = document.getElementById("flagCheckbox").checked;
 
-            const res = await fetch("/query", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    query: query,
-                    flag: flag
-                })
-            });
+            const spinner = document.getElementById("loadingSpinner");
+            const container = document.getElementById("imageContainer");
+            container.innerHTML = ""; // clear ảnh cũ
+            spinner.classList.remove("d-none"); // show spinner
 
-            const data = await res.json();
+            try {
+                const res = await fetch("/query", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        query: query,
+                        flag: flag,
+                        flagValue: flagValue
+                    })
+                });
 
-            renderImages(data.images); // hiển thị kết quả query trong imageContainer
+                const data = await res.json();
+                renderImages(data.images);
+            } catch (err) {
+                console.error("Error fetching images:", err);
+                alert("Failed to fetch images!");
+            } finally {
+                spinner.classList.add("d-none"); // hide spinner
+            }
         }
     });
+
 
     // Export CSV (chỉ ảnh tick theo thứ tự)
     exportCsvBtn.addEventListener("click", () => {
@@ -296,5 +445,81 @@ document.addEventListener("DOMContentLoaded", () => {
         link.click();
         document.body.removeChild(link);
     });
+
+    document.getElementById("generateCsvBtn").addEventListener("click", () => {
+        const filename = document.getElementById("csvFilenameInput").value.trim() || "result.csv";
+        const videoName = document.getElementById("videoNameInput").value.trim();
+        const secondsStr = document.getElementById("secondsInput").value.trim();
+        const rowCount = parseInt(document.getElementById("rowCountInput").value) || 50;
+        const offset = parseInt(document.getElementById("offsetInput").value) || 3;
+
+        if (!videoName || !secondsStr) {
+            alert("Please enter video name and frames!");
+            return;
+        }
+
+        const mapping = Array.isArray(videoMapping) 
+                ? videoMapping.find(m => m.video_name === videoName)
+                : null;
+
+        if (!mapping) {
+            alert(`Không tìm thấy video_name ${videoName} trong url_fps_mapping.json`);
+            return;
+        }
+
+        const fps = mapping.fps || 30;
+        // 🔄 Hàm parse seconds hỗ trợ cả 2 định dạng: giây hoặc phút:giây
+        function parseTimeStr(str) {
+            str = str.trim();
+            if (str.includes(":")) {
+                const parts = str.split(":");
+                if (parts.length === 2) {
+                    const minutes = parseFloat(parts[0]);
+                    const seconds = parseFloat(parts[1]);
+                    return minutes * 60 + seconds;
+                }
+            }
+            return parseFloat(str);
+        }
+
+        // 🎯 Chuyển seconds (hỗn hợp) -> frames
+        const baseFrames = secondsStr.split(",")
+            .map(s => parseTimeStr(s))
+            .filter(val => !isNaN(val))
+            .map(sec => Math.round(sec * fps));
+
+        if (baseFrames.length === 0) {
+            alert("Không parse được seconds nào hợp lệ!");
+            return;
+        }
+
+        // 📄 Sinh các row
+        let rows = [];
+        rows.push(`${videoName}, ${baseFrames.join(", ")}`); // row gốc
+
+        for (let i = 1; i <= rowCount - 1; i++) {
+            const delta = i * offset;
+
+            // row cộng
+            const plusRow = baseFrames.map(f => f + delta);
+            rows.push(`${videoName}, ${plusRow.join(", ")}`);
+
+            // row trừ
+            const minusRow = baseFrames.map(f => f - delta);
+            rows.push(`${videoName}, ${minusRow.join(", ")}`);
+        }
+
+        // 📤 Xuất CSV
+        const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
+        const encodedUri = encodeURI(csvContent);
+
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
 });
 
