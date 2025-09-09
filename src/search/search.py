@@ -6,11 +6,11 @@ def image_search_1(text, embedding, qdrant_client_1):
     search_result = qdrant_client_1.search(
         collection_name="image_clip_vectors",
         query_vector=text_features.squeeze().tolist(),
-        limit=500,
+        limit=200,
         with_payload=True,
         search_params=models.SearchParams(
-        hnsw_ef=400,
-        exact=False
+        # hnsw_ef=1000,
+        exact=True
         ),
         timeout=60
     )
@@ -26,11 +26,11 @@ def image_search_2(text, embedding, qdrant_client_2):
     search_result = qdrant_client_2.search(
         collection_name="image_clip_vectors",
         query_vector=text_features.squeeze().tolist(),
-        limit=500,
+        limit=200,
         with_payload=True,
         search_params=models.SearchParams(
-        hnsw_ef=400,
-        exact=False
+        # hnsw_ef=600,
+        exact=True
     ),
         timeout=60
     )
@@ -70,8 +70,13 @@ def content_search(text,bgem3_embedding,bm25_embedding,client):
             query=models.FusionQuery(
                 fusion=models.Fusion.RRF,
             ),
+            
             with_payload=True,
             limit=100,
+            search_params=models.SearchParams(
+                exact=True
+            ),
+            timeout=60
         )
     video_dict = {}
     for point in results.points:
