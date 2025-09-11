@@ -51,13 +51,14 @@ async def query_image():
     data = request.get_json()
     query = data.get("query", "")
     flagValue = data.get("flagValue", "")
-    if flagValue is not None:
+    if flagValue is not None and flagValue != "":
         # 3. Nếu flag True thì chạy content search song song
         gemini_task = asyncio.to_thread(gemini_model.generate_content, query)
         content_task = asyncio.to_thread(content_search, flagValue, bgem3_embedding, bm25_embedding, content_qdrant_client)
         eng_query, content_results = await asyncio.gather(
             gemini_task, content_task
         )
+        print("Rewritten Query:", eng_query)
         img1_task = asyncio.to_thread(image_search_1, eng_query, clip_embedding, image_qdrant_client_1)
         img2_task = asyncio.to_thread(image_search_2, eng_query, clip_embedding, image_qdrant_client_2)
         image_results_1, image_results_2 = await asyncio.gather(img1_task, img2_task)
@@ -69,6 +70,7 @@ async def query_image():
         return jsonify({"images": final_results[:200]})
     else:
         eng_query = gemini_model.generate_content(query)
+        print("Rewritten Query:", eng_query)
         img1_task = asyncio.to_thread(image_search_1, eng_query, clip_embedding, image_qdrant_client_1)
         img2_task = asyncio.to_thread(image_search_2, eng_query, clip_embedding, image_qdrant_client_2)
         image_results_1, image_results_2 = await asyncio.gather(img1_task, img2_task)

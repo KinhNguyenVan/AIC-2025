@@ -292,9 +292,50 @@
 
 
     <div class="footer">
-        &copy; 2023 Demo
+        &copy; 2025 Galaxy AI
     </div>
 
+    <!-- Modal YouTube -->
+    <div class="modal fade" id="youtubeModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">YouTube Player</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="youtubePlayer"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="getFrameBtn" class="btn btn-primary">
+                    <i class="bi bi-scissors"></i> Get Frame
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script src="/static/script.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let player;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player("youtubePlayer", {
+            height: "390",
+            width: "640",
+            videoId: "",
+            });
+        }
+
+        // ✅ Khi modal bị đóng (close hoặc click ra ngoài) → stop video
+        document.getElementById("youtubeModal").addEventListener("hidden.bs.modal", () => {
+            if (player) {
+                player.stopVideo(); // ⏹ stop luôn, không chạy ngầm nữa
+            }
+        });
+    </script>
 </body>
 </html>
