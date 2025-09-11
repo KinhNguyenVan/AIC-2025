@@ -85,14 +85,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const seconds = Math.floor(frameNumber / fps);
 
             // Mở link youtube với timestamp
-            const youtubeUrl = `${mapping.watch_url}&t=${seconds}s`;
-            window.open(youtubeUrl, "_blank");
+            // const youtubeUrl = `${mapping.watch_url}&t=${seconds}s`;
+            // window.open(youtubeUrl, "_blank");
+
+            console.log("Opening video:", mapping.watch_url, "at", seconds, "seconds");
+            // 🚀 Mở video trong modal thay vì tab mới
+            openYouTubeModal(videoName, seconds);
         } catch (err) {
             console.error(err);
             alert("Failed to open video!");
         }
     });
-
 
 
 
@@ -340,10 +343,51 @@ document.addEventListener("DOMContentLoaded", () => {
         const seconds = Math.floor(frameNumber / fps);
 
         // Mở link youtube với timestamp
-        const youtubeUrl = `${mapping.watch_url}&t=${seconds}s`;
-        window.open(youtubeUrl, "_blank");
+        // const youtubeUrl = `${mapping.watch_url}&t=${seconds}s`;
+        // window.open(youtubeUrl, "_blank");
+
+        //console.log("Opening video:", mapping.watch_url, "at", seconds, "seconds");
+        // 🚀 Mở video trong modal thay vì tab mới
+        openYouTubeModal(videoName, seconds);
     });
 
+    function openYouTubeModal(videoName, startSeconds = 0) {
+        currentVideoName = videoName;
+
+        const mapping = Array.isArray(videoMapping) 
+            ? videoMapping.find(m => m.video_name === videoName)
+            : null;
+
+        if (!mapping) {
+            alert(`Không tìm thấy video_name ${videoName} trong url_fps_mapping.json`);
+            return;
+        }
+
+        const videoId = new URL(mapping.watch_url).searchParams.get("v");
+        player.loadVideoById({ videoId: videoId, startSeconds: startSeconds });
+
+        const modal = new bootstrap.Modal(document.getElementById('youtubeModal'));
+        modal.show();
+    }
+
+    document.getElementById("getFrameBtn").addEventListener("click", () => {
+        if (!player || !currentVideoName) return;
+        player.pauseVideo(); // ⏸ dừng lại
+
+        const mapping = videoMapping.find(m => m.video_name === currentVideoName);
+        const fps = mapping?.fps || 30;
+
+        const seconds = player.getCurrentTime();
+        const frame = Math.round(seconds * fps);
+
+        // Copy vào clipboard luôn
+        navigator.clipboard.writeText(frame).then(() => {
+            alert(`🎬 Video: ${currentVideoName}\n⏱ Seconds: ${seconds.toFixed(3)}\n🖼 Frame: ${frame}\n(Đã copy vào clipboard)`);
+        });
+    });
+
+
+    
 
     toggleBtn.addEventListener("click", () => {
         if (sidebar.style.width === "40px") {
