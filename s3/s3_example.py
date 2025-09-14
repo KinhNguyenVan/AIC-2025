@@ -33,12 +33,12 @@ from s3_utils import get_public_url, upload_file, upload_many, upload_folder, ge
 
 
 # List all files
-get_list(prefix="Keyframes_K10")
+#get_list(prefix="Keyframes_K10")
 
 
 
 # Download file
-#download_file("cat.jpg", "downloads/cat.jpg")
+download_file("Keyframes_L28_a/L28_V016/028779.webp", "downloads/cat.jpg")
 
 
 
