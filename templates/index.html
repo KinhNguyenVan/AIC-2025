@@ -140,8 +140,8 @@
 
                 <div class="container">
                     <div class="row g-3">
-                        <!-- Search -->
-                        <div class="col-12 col-md-4">
+                        <!-- Image Search -->
+                        <div class="col-12 col-md-6">
                             <div class="card h-100 shadow-sm">
                                 <div class="card-body">
                                     <h5 class="card-title"><i class="bi bi-image"></i> Image Search</h5>
@@ -169,70 +169,39 @@
                             </div>
                         </div>
 
-                        <!-- Generate CSV from Frames -->
-                        <div class="col-12 col-md-4">
+                        <!-- Generate CSV -->
+                        <div class="col-12 col-md-6">
                             <div class="card h-100 shadow-sm">
                                 <div class="card-body">
                                     <h5 class="card-title"><i class="bi bi-file-earmark-spreadsheet"></i> Generate CSV</h5>
-
                                     <div class="input-group mb-2">
                                         <span class="input-group-text">Filename</span>
                                         <input type="text" id="csvFilenameInput" class="form-control" placeholder="result.csv">
                                     </div>
-
                                     <div class="input-group mb-2">
                                         <span class="input-group-text">Video</span>
                                         <input type="text" id="videoNameInput" class="form-control" placeholder="L26_V072">
                                     </div>
-
                                     <div class="input-group mb-2">
                                         <span class="input-group-text">Seconds</span>
                                         <input type="text" id="secondsInput" class="form-control" placeholder="e.g. 89.4, 4:20.5">
                                     </div>
-
                                     <div class="input-group mb-2">
                                         <span class="input-group-text">Rows</span>
                                         <input type="number" id="rowCountInput" class="form-control" value="2">
                                     </div>
-
                                     <div class="input-group mb-3">
                                         <span class="input-group-text">Offset</span>
                                         <input type="number" id="offsetInput" class="form-control" value="3">
                                     </div>
-
                                     <button id="generateCsvBtn" class="btn btn-success w-100">
                                         <i class="bi bi-download"></i> Export CSV
                                     </button>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Search Frame by Video + Frame -->
-                        <div class="col-12 col-md-4">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-body">
-                                    <h5 class="card-title"><i class="bi bi-search"></i> Find Frame</h5>
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text">Video path</span>
-                                        <input type="text" id="videoInput" class="form-control" placeholder="e.g. L21_V002">
-                                    </div>
-                                    <div class="input-group mb-3">
-                                        <span class="input-group-text">Frame</span>
-                                        <input type="text" id="frameInput" class="form-control" placeholder="e.g. 000123">
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <button id="showFrameBtn" class="btn btn-primary flex-fill">
-                                            <i class="bi bi-image"></i> Show Frame
-                                        </button>
-                                        <button id="openVideoBtn2" class="btn btn-secondary flex-fill">
-                                            <i class="bi bi-youtube"></i> Open Video
-                                        </button>
-                                    </div>
-                                    <div id="frameResult" class="mt-3"></div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
+
 
 
                     <!-- DB Display -->

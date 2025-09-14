@@ -25,77 +25,77 @@ document.addEventListener("DOMContentLoaded", () => {
     let selectedImages = [];
 
 
-    const videoInput = document.getElementById("videoInput");
-    const frameInput = document.getElementById("frameInput");
-    const frameResult = document.getElementById("frameResult");
-    const showFrameBtn = document.getElementById("showFrameBtn");
-    const openVideoBtn2 = document.getElementById("openVideoBtn2");
+    //const videoInput = document.getElementById("videoInput");
+    //const frameInput = document.getElementById("frameInput");
+    //const frameResult = document.getElementById("frameResult");
+    //const showFrameBtn = document.getElementById("showFrameBtn");
+    //const openVideoBtn2 = document.getElementById("openVideoBtn2");
 
-    showFrameBtn.addEventListener("click", async () => {
-        const video = videoInput.value.trim();
-        const frame = frameInput.value.trim();
+    // showFrameBtn.addEventListener("click", async () => {
+    //     const video = videoInput.value.trim();
+    //     const frame = frameInput.value.trim();
 
-        if (!video || !frame) {
-            alert("Please enter both video name and frame number!");
-            return;
-        }
+    //     if (!video || !frame) {
+    //         alert("Please enter both video name and frame number!");
+    //         return;
+    //     }
 
-        // Build frame URL (CloudFront hoặc S3)
-        const frameUrl = `https://d1zgby2rss028i.cloudfront.net/${video}/${frame}.webp`;
+    //     // Build frame URL (CloudFront hoặc S3)
+    //     const frameUrl = `https://d1zgby2rss028i.cloudfront.net/${video}/${frame}.webp`;
 
-        // Hiện kết quả
-        frameResult.innerHTML = `
-            <div class="card">
-                <img src="${frameUrl}" class="card-img-top" style="max-height:200px; object-fit:contain;">
-                <div class="card-body p-2 text-center">
-                    <small>${video}/${frame}.webp</small>
-                </div>
-            </div>
-        `;
+    //     // Hiện kết quả
+    //     frameResult.innerHTML = `
+    //         <div class="card">
+    //             <img src="${frameUrl}" class="card-img-top" style="max-height:200px; object-fit:contain;">
+    //             <div class="card-body p-2 text-center">
+    //                 <small>${video}/${frame}.webp</small>
+    //             </div>
+    //         </div>
+    //     `;
 
-        // Đồng thời renderImages để có thể tick/select
-        // renderImages([frameUrl]);
-    });
+    //     // Đồng thời renderImages để có thể tick/select
+    //     // renderImages([frameUrl]);
+    // });
 
-    openVideoBtn2.addEventListener("click", async () => {
-        const video = videoInput.value.trim();
-        const frame = frameInput.value.trim();
+    // openVideoBtn2.addEventListener("click", async () => {
+    //     const video = videoInput.value.trim();
+    //     const frame = frameInput.value.trim();
 
-        if (!video || !frame) {
-            alert("Please enter both video name and frame number!");
-            return;
-        }
+    //     if (!video || !frame) {
+    //         alert("Please enter both video name and frame number!");
+    //         return;
+    //     }
 
-        // Lấy video_name từ cuối đường dẫn: L30_V001
-        const videoName = video.split("/").pop();
-        console.log("Video name:", videoName);
+    //     // Lấy video_name từ cuối đường dẫn: L30_V001
+    //     const videoName = video.split("/").pop();
+    //     console.log("Video name:", videoName);
 
-        try {
-            const mapping = Array.isArray(videoMapping) 
-                ? videoMapping.find(m => m.video_name === videoName)
-                : null;
+    //     try {
+    //         const mapping = Array.isArray(videoMapping) 
+    //             ? videoMapping.find(m => m.video_name === videoName)
+    //             : null;
 
-            if (!mapping) {
-                alert(`Không tìm thấy video_name ${videoName} trong url_fps_mapping.json`);
-                return;
-            }
+    //         if (!mapping) {
+    //             alert(`Không tìm thấy video_name ${videoName} trong url_fps_mapping.json`);
+    //             return;
+    //         }
 
-            const frameNumber = parseInt(frame, 10);
-            const fps = mapping.fps || 30;
-            const seconds = Math.floor(frameNumber / fps);
+    //         const frameNumber = parseInt(frame, 10);
+    //         const fps = mapping.fps || 30;
+    //         const seconds = Math.floor(frameNumber / fps);
 
-            // Mở link youtube với timestamp
-            // const youtubeUrl = `${mapping.watch_url}&t=${seconds}s`;
-            // window.open(youtubeUrl, "_blank");
+    //         // Mở link youtube với timestamp
+    //         // const youtubeUrl = `${mapping.watch_url}&t=${seconds}s`;
+    //         // window.open(youtubeUrl, "_blank");
 
-            console.log("Opening video:", mapping.watch_url, "at", seconds, "seconds");
-            // 🚀 Mở video trong modal thay vì tab mới
-            openYouTubeModal(videoName, seconds);
-        } catch (err) {
-            console.error(err);
-            alert("Failed to open video!");
-        }
-    });
+    //         console.log("Opening video:", mapping.watch_url, "at", seconds, "seconds");
+    //         // 🚀 Mở video trong modal thay vì tab mới
+    //         openYouTubeModal(videoName, seconds);
+    //     } catch (err) {
+    //         console.error(err);
+    //         alert("Failed to open video!");
+    //     }
+    // });
 
 
 
