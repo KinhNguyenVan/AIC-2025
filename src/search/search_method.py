@@ -29,7 +29,6 @@ def image_search_2(text, embedding, qdrant_client_2):
         limit=200,
         with_payload=True,
         search_params=models.SearchParams(
-        # hnsw_ef=600,
         exact=True
     ),
         timeout=60
@@ -90,3 +89,49 @@ def content_search(text,bgem3_embedding,bm25_embedding,client):
     result_list.sort(key=lambda x: x['score'], reverse=True)
 
     return result_list
+
+
+def caption_search(text,bgem3_embedding,bm25_embedding,client):
+    query = text
+
+    dense_q = bgem3_embedding.embed_query(query)
+    sparse_list = list(bm25_embedding.passage_embed(query))
+    sparse_q = models.SparseVector(
+            indices=sparse_list[0].indices.tolist(),
+            values=sparse_list[0].values.tolist()
+        )
+    prefetch = [
+        models.Prefetch(
+            query=dense_q,
+            using="bge-m3",
+            limit=200,
+        ),
+        models.Prefetch(
+            query=sparse_q,
+            using="bm25",
+            limit=200,
+        ),
+    ]
+    results = client.query_points(
+            "caption-collection",
+            prefetch=prefetch,
+            query=models.FusionQuery(
+                fusion=models.Fusion.RRF,
+            ),
+            
+            with_payload=True,
+            limit=200,
+            search_params=models.SearchParams(
+                exact=True
+            ),
+            timeout=60
+        )
+    results = [
+    {
+        "path": point.payload["path"],
+        "score": float(point.score)  # ép sang float để gọn giống log
+    }
+    for point in results.points
+    ]
+
+    return results

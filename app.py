@@ -8,6 +8,7 @@ from src.search.search_service import SearchService
 
 
 app = Flask(__name__)
+search_service = SearchService(max_workers=64)
 
 S3_BASE = "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com"
 CLOUDFRONT_BASE = "https://d1zgby2rss028i.cloudfront.net"
@@ -41,10 +42,8 @@ def upload_images():
 
 @app.route("/query", methods=["POST"])
 async def query_image():
-    search_service = SearchService(max_workers=64)
+    
     return await search_service.process_with_executor(request)
-
-
 
     # data = request.get_json()
     # query = data.get("query", "")

@@ -3,10 +3,10 @@ from concurrent.futures import ThreadPoolExecutor
 from flask import jsonify
 import logging
 from src.search.model import gemini_model, clip_embedding, bgem3_embedding, bm25_embedding
-from src.search.qdrant_db import image_qdrant_client_1, image_qdrant_client_2, content_qdrant_client
-from src.search.search_method import image_search_1, image_search_2, content_search
+from src.search.qdrant_db import image_qdrant_client_1, image_qdrant_client_2, content_qdrant_client,caption_qdrant_client
+from src.search.search_method import image_search_1, image_search_2, content_search,caption_search
 from src.rerank.rerank import rerank_images
-from src.utils import deduplicate_and_sort
+from src.utils import deduplicate_and_sort,normalize_scores
 
 logger = logging.getLogger(__name__)
 CLOUDFRONT_BASE = "https://d1zgby2rss028i.cloudfront.net"
@@ -91,10 +91,19 @@ class SearchService:
                 clip_embedding, 
                 image_qdrant_client_2
             )
+            caption_future = loop.run_in_executor(
+                self.executor,
+                caption_search, 
+                eng_query, 
+                bgem3_embedding, 
+                bm25_embedding, 
+                caption_qdrant_client
+            )
             
-            image_results_1, image_results_2 = await asyncio.gather(
+            image_results_1, image_results_2,caption_results = await asyncio.gather(
                 img1_future, 
                 img2_future,
+                caption_future,
                 return_exceptions=True
             )
             
@@ -107,8 +116,14 @@ class SearchService:
                 logger.error(f"Image search 2 error: {image_results_2}")
                 image_results_2 = []
             
+            if isinstance(caption_results, Exception):
+                logger.error(f"caption search error: {caption_results}")
+                caption_results = []
+
+
             # Bước 3: Kết hợp và rerank
-            image_results = image_results_1 + image_results_2
+            image_results = image_results_1 + image_results_2 + caption_results
+
             
             if image_results and content_results:
                 # Có cả image và content results -> rerank
@@ -167,10 +182,19 @@ class SearchService:
                 clip_embedding, 
                 image_qdrant_client_2
             )
+            caption_future = loop.run_in_executor(
+                self.executor,
+                caption_search, 
+                eng_query, 
+                bgem3_embedding, 
+                bm25_embedding, 
+                caption_qdrant_client
+            )
             
-            image_results_1, image_results_2 = await asyncio.gather(
+            image_results_1, image_results_2,caption_results = await asyncio.gather(
                 img1_future, 
                 img2_future,
+                caption_future,
                 return_exceptions=True
             )
             
@@ -182,15 +206,25 @@ class SearchService:
             if isinstance(image_results_2, Exception):
                 logger.error(f"Image search 2 error: {image_results_2}")
                 image_results_2 = []
-            
+
+            if isinstance(caption_results, Exception):
+                logger.error(f"caption search error: {caption_results}")
+                caption_results = []
+
+            caption_results = normalize_scores(caption_results)
+            image_results_1 = normalize_scores(image_results_1)
+            image_results_2 = normalize_scores(image_results_2)
+            print("caption",caption_results)
+            print("image",image_results_1)
             # Bước 3: Kết hợp và deduplicate
-            image_results = image_results_1 + image_results_2
+            retrieve_results = image_results_1 + image_results_2 + caption_results
             
-            if image_results:
+            
+            if retrieve_results:
                 deduplicated_results = await loop.run_in_executor(
                     self.executor,
                     deduplicate_and_sort, 
-                    image_results
+                    retrieve_results
                 )
                 final_results = [f"{CLOUDFRONT_BASE}/{res['path']}" for res in deduplicated_results]
             else:

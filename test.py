@@ -21,7 +21,7 @@ qdrant_client.delete(
             must=[
                 models.FieldCondition(
                     key="path",
-                    match=models.MatchText(text="Keyframes_K07/K07_V001")
+                    match=models.MatchText(text="Keyframes_K07")
                 )
             ]
         )

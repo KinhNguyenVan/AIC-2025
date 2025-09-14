@@ -1,3 +1,6 @@
+
+import numpy as np
+
 def deduplicate_and_sort(image_results, payload_key="path"):
     """
     Xóa bớt các point có cùng payload_key (giữ lại point có score cao nhất),
@@ -20,3 +23,17 @@ def deduplicate_and_sort(image_results, payload_key="path"):
 
 
     return deduped_results
+
+
+def normalize_scores(results):
+    scores = [item["score"] for item in results]
+    if not scores:  # tránh chia cho 0
+        return results
+    min_s, max_s = min(scores), max(scores)
+    if min_s == max_s:
+        return results  # tất cả bằng nhau, khỏi normalize
+    return [
+        {"path": item["path"], "score": (item["score"] - min_s) / (max_s - min_s)}
+        for item in results
+    ]
+

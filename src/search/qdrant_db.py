@@ -18,3 +18,7 @@ image_qdrant_client_2 = QdrantClient(
     url=os.getenv("IMAGE_QDRANT_URL_2"),
     api_key=os.getenv("IMAGE_QDRANT_API_KEY_2")
 )
+caption_qdrant_client = QdrantClient(
+    url= os.getenv("CAPTION_QDRANT_URL"),
+    api_key=os.getenv("CAPTION_QDRANT_API_KEY")
+)
