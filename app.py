@@ -3,12 +3,14 @@ import os
 import json
 from sympy import limit
 from s3.s3_utils import get_neighbor_frames  # import hàm có sẵn
-from src.search.search_service import SearchService
+from src.search.search_service import CombinedSearchService,CaptionSearchService,ImageSearchService
 
 
 
 app = Flask(__name__)
-search_service = SearchService(max_workers=64)
+search_service =ImageSearchService(max_workers=64) # only image search
+# search_service = CaptionSearchService(max_workers=64) # only caption search
+# search_service = CombinedSearchService(max_workers = 64) # combine 2 methods search
 
 S3_BASE = "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com"
 CLOUDFRONT_BASE = "https://d1zgby2rss028i.cloudfront.net"
@@ -45,36 +47,6 @@ async def query_image():
     
     return await search_service.process_with_executor(request)
 
-    # data = request.get_json()
-    # query = data.get("query", "")
-    # flagValue = data.get("flagValue", "")
-    # if flagValue is not None and flagValue != "":
-    #     # 3. Nếu flag True thì chạy content search song song
-    #     gemini_task = asyncio.to_thread(gemini_model.generate_content, query)
-    #     content_task = asyncio.to_thread(content_search, flagValue, bgem3_embedding, bm25_embedding, content_qdrant_client)
-    #     eng_query, content_results = await asyncio.gather(
-    #         gemini_task, content_task
-    #     )
-    #     print("Rewritten Query:", eng_query)
-    #     img1_task = asyncio.to_thread(image_search_1, eng_query, clip_embedding, image_qdrant_client_1)
-    #     img2_task = asyncio.to_thread(image_search_2, eng_query, clip_embedding, image_qdrant_client_2)
-    #     image_results_1, image_results_2 = await asyncio.gather(img1_task, img2_task)
-        
-    #     # 4. Rerank kết quả
-    #     image_results = image_results_1 + image_results_2
-    #     reranked_results = rerank_images(image_results, content_results)
-    #     final_results = [f"{CLOUDFRONT_BASE}/{res['path']}" for res in reranked_results]
-    #     return jsonify({"images": final_results[:200]})
-    # else:
-    #     eng_query = gemini_model.generate_content(query)
-    #     print("Rewritten Query:", eng_query)
-    #     img1_task = asyncio.to_thread(image_search_1, eng_query, clip_embedding, image_qdrant_client_1)
-    #     img2_task = asyncio.to_thread(image_search_2, eng_query, clip_embedding, image_qdrant_client_2)
-    #     image_results_1, image_results_2 = await asyncio.gather(img1_task, img2_task)
-    #     image_results = image_results_1 + image_results_2
-    #     image_results = deduplicate_and_sort(image_results, payload_key="path")
-    #     return jsonify({"images": [f"{CLOUDFRONT_BASE}/{res['path']}" for res in image_results[:200]]})
-    
 
 @app.route("/frames", methods=["GET"])
 def get_frames():

@@ -75,7 +75,7 @@ class GeminiModel:
             if not api_key:
                 print("Warning: GOOGLE_API_KEY environment variable is not set.")
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-2.5-flash')
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
         except Exception as e:
             print(f"Error initializing Gemini model: {e}")
 
