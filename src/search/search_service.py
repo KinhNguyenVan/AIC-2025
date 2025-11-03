@@ -125,6 +125,7 @@ class ImageSearchService(BaseSearchService):
         try:
             # Bước 1: Generate query với gemini
             eng_query = await self._generate_query_with_gemini(query, loop)
+            print("eng_query", eng_query)
             
             # Bước 2: Tìm kiếm ảnh từ 2 client song song
             image_results_1, image_results_2 = await self._search_images_parallel(eng_query, loop)
