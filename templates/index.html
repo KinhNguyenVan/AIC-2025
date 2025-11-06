@@ -133,8 +133,12 @@
         <div id="mainContent" class="flex-grow-1" style="margin-left:200px;">
             <div class="container2">
                 <nav class="navbar bg-body-tertiary mb-3">
-                    <div class="container">
+                    <div class="container d-flex justify-content-between">
                         <span class="navbar-brand mb-0 h1">Web ML content-based image retrieval demo</span>
+                        <div>
+                            <a href="/" class="btn btn-sm btn-outline-secondary me-2">Tìm kiếm</a>
+                            <a href="/submission" class="btn btn-sm btn-primary">Trang nộp bài</a>
+                        </div>
                     </div>
                 </nav>
 
@@ -148,12 +152,34 @@
                                     <div class="input-group mb-3">
                                         <input type="text" class="form-control" placeholder="Search by text...">
                                         <input type="text" id="flagInput" class="form-control" placeholder="Enter flag...">
-                                        <div class="input-group-text">
-                                            <input id="flagCheckbox" class="form-check-input mt-0" type="checkbox">
-                                        </div>
                                         <button class="btn btn-outline-secondary" type="button">
                                             <i class="bi bi-mic"></i>
                                         </button>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold">Topics:</label>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input topic-checkbox" type="checkbox" id="topicTinTuc" data-topic="tin tức">
+                                                <label class="form-check-label small" for="topicTinTuc">Tin tức</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input topic-checkbox" type="checkbox" id="topicMuaLan" data-topic="múa lân">
+                                                <label class="form-check-label small" for="topicMuaLan">Múa lân</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input topic-checkbox" type="checkbox" id="topicDuaXeDap" data-topic="đua xe đạp">
+                                                <label class="form-check-label small" for="topicDuaXeDap">Đua xe đạp</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input topic-checkbox" type="checkbox" id="topicDayHocOnline" data-topic="dạy học online">
+                                                <label class="form-check-label small" for="topicDayHocOnline">Dạy học online</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input topic-checkbox" type="checkbox" id="topicChuongTrinhNauAn" data-topic="chương trình nấu ăn">
+                                                <label class="form-check-label small" for="topicChuongTrinhNauAn">Chương trình nấu ăn</label>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div id="resultrow" class="row d-none">
                                         <div class="col-6">
@@ -169,34 +195,33 @@
                             </div>
                         </div>
 
-                        <!-- Generate CSV -->
+                        <!-- Xuất thông báo kết quả -->
                         <div class="col-12 col-md-6">
                             <div class="card h-100 shadow-sm">
                                 <div class="card-body">
-                                    <h5 class="card-title"><i class="bi bi-file-earmark-spreadsheet"></i> Generate CSV</h5>
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text">Filename</span>
-                                        <input type="text" id="csvFilenameInput" class="form-control" placeholder="result.csv">
+                                    <h5 class="card-title"><i class="bi bi-ui-checks"></i> Xuất thông báo kết quả</h5>
+                                    <div class="mb-2">
+                                        <label class="form-label">Kiểu câu hỏi</label>
+                                        <select id="resultType" class="form-select">
+                                            <option value="kis">kis</option>
+                                            <option value="qa">qa</option>
+                                            <option value="trake">trake</option>
+                                        </select>
                                     </div>
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text">Video</span>
-                                        <input type="text" id="videoNameInput" class="form-control" placeholder="L26_V072">
+                                    <div id="qaAnswerGroup" class="mb-2 d-none">
+                                        <label class="form-label">Answer (chỉ cho QA)</label>
+                                        <input type="text" id="qaAnswerInput" class="form-control" placeholder="Nhập answer...">
                                     </div>
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text">Seconds</span>
-                                        <input type="text" id="secondsInput" class="form-control" placeholder="e.g. 89.4, 4:20.5">
+                                    <div class="d-grid gap-2 mb-2">
+                                        <button id="exportResultBtn" class="btn btn-primary">
+                                            <i class="bi bi-check2-circle"></i> Xuất kết quả
+                                        </button>
+                                        <button id="sendToSubmissionBtn" class="btn btn-outline-primary">
+                                            <i class="bi bi-box-arrow-in-right"></i> Gửi sang trang nộp bài
+                                        </button>
                                     </div>
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text">Rows</span>
-                                        <input type="number" id="rowCountInput" class="form-control" value="2">
-                                    </div>
-                                    <div class="input-group mb-3">
-                                        <span class="input-group-text">Offset</span>
-                                        <input type="number" id="offsetInput" class="form-control" value="3">
-                                    </div>
-                                    <button id="generateCsvBtn" class="btn btn-success w-100">
-                                        <i class="bi bi-download"></i> Export CSV
-                                    </button>
+                                    <label class="form-label">Kết quả</label>
+                                    <textarea id="resultOutput" class="form-control" rows="8" readonly></textarea>
                                 </div>
                             </div>
                         </div>

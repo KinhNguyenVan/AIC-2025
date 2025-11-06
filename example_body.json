@@ -1,0 +1,37 @@
+KIS: {
+    "answerSets": [
+        {
+            "answers": [
+                {
+                    "mediaItemName": "<VIDEO_ID>",
+                    "start": "<TIME(ms)>",
+                    "end": "<TIME(ms)>"
+                }
+            ]
+        }
+    ]
+}
+
+QA: {
+    "answerSets": [
+        {
+            "answers": [
+                {
+                    "text": "QA-<ANSWER>-<VIDEO_ID>-<TIME(ms)>"
+                }
+            ]
+        }
+    ]
+}
+
+TRAKE: {
+    "answerSets": [
+        {
+            "answers": [
+                {
+                    "text": "TR-<VIDEO_ID>-<FRAME_ID1>,<FRAME_ID2>,..."
+                }
+            ]
+        }
+    ]
+}
