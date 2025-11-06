@@ -3,12 +3,13 @@ import os
 import json
 from sympy import limit
 from s3.s3_utils import get_neighbor_frames  # import hàm có sẵn
-from src.search.search_service import CombinedSearchService,CaptionSearchService,ImageSearchService
+# from src.search.search_service import CombinedSearchService,CaptionSearchService,ImageSearchService
 
+from src.utils import mock_keys, mapping_topics  # import mock_keys và mapping_topics từ src/utils.py
 
 
 app = Flask(__name__)
-search_service =ImageSearchService(max_workers=64) # only image search
+# search_service =ImageSearchService(max_workers=64) # only image search
 # search_service = CaptionSearchService(max_workers=64) # only caption search
 # search_service = CombinedSearchService(max_workers = 64) # combine 2 methods search
 
@@ -25,6 +26,10 @@ with open("url_fps_mapping.json") as f:
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route("/submission")
+def submission_page():
+    return render_template("AIC25-Submission.html")
 
 @app.route("/db")
 def list_db():
@@ -44,8 +49,25 @@ def upload_images():
 
 @app.route("/query", methods=["POST"])
 async def query_image():
+    # Extract data from request
+    data = request.get_json()
+    query = data.get("query", "") if data else ""
+    flagValue = data.get("flagValue", "") if data else ""
+    topics = data.get("topics", []) if data else []
     
-    return await search_service.process_with_executor(request)
+    # # Convert topics sang mã code (nếu có)
+    topic_codes = []
+    if topics:
+        for topic in topics:
+            if topic in mapping_topics:
+                topic_codes.extend(mapping_topics[topic])
+    
+    # For testing purpose, return mock results
+    mock_results = [f"{CLOUDFRONT_BASE}/{key}" for key in mock_keys]
+    return jsonify({"images": mock_results})
+
+    # # For production, use the search service
+    # return await search_service.process_with_executor(query, flagValue)
 
 
 @app.route("/frames", methods=["GET"])
