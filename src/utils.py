@@ -42,8 +42,8 @@ def normalize_scores(results):
 mapping_topics = {
     "tin tức": ["K01","K02","K03","K04","K05","K06","K07","K08","K09","K10","K11","K12","K13","K14","K15","K16","K17","K18","K19","K20","L21","L22","L27","L28","L29","L30"], 
     "múa lân": ["L24"],
-    "đua xe đạp":["L23"],
-    "dạy học online":["L25"],
-    "chương trình nấu ăn":["L26"]
+    "đua xe đạp": ["L23"],
+    "dạy học online": ["L25"],
+    "chương trình nấu ăn": ["L26"]
 }
 

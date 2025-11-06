@@ -10,7 +10,6 @@ from src.search.search_service import CombinedSearchService,CaptionSearchService
 app = Flask(__name__)
 search_service =ImageSearchService(max_workers=64) # only image search
 # search_service = CaptionSearchService(max_workers=64) # only caption search
-# search_service = CombinedSearchService(max_workers = 64) # combine 2 methods search
 
 S3_BASE = "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com"
 CLOUDFRONT_BASE = "https://d1zgby2rss028i.cloudfront.net"
