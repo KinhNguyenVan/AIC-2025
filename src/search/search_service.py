@@ -61,13 +61,9 @@ class BaseSearchService:
 class ImageSearchService(BaseSearchService):
     """Service chuyên cho image search"""
     
-    async def process_with_executor(self, request):
+    async def process_with_executor(self, query, flagValue=""):
         """Main method để xử lý image search request"""
         try:
-            data = request.get_json()
-            query = data.get("query", "")
-            flagValue = data.get("flagValue", "")
-            
             if not query:
                 return jsonify({"error": "Query is required"}), 400
             
@@ -209,13 +205,9 @@ class ImageSearchService(BaseSearchService):
 class CaptionSearchService(BaseSearchService):
     """Service chuyên cho caption search"""
     
-    async def process_with_executor(self, request):
+    async def process_with_executor(self, query, flagValue=""):
         """Main method để xử lý caption search request"""
         try:
-            data = request.get_json()
-            query = data.get("query", "")
-            flagValue = data.get("flagValue", "")
-            
             if not query:
                 return jsonify({"error": "Query is required"}), 400
             
@@ -341,13 +333,9 @@ class CaptionSearchService(BaseSearchService):
 class CombinedSearchService(BaseSearchService):
     """Service kết hợp cả image và caption search (giống như code gốc)"""
     
-    async def process_with_executor(self, request):
+    async def process_with_executor(self, query, flagValue=""):
         """Main method để xử lý combined search request"""
         try:
-            data = request.get_json()
-            query = data.get("query", "")
-            flagValue = data.get("flagValue", "")
-            
             if not query:
                 return jsonify({"error": "Query is required"}), 400
             
