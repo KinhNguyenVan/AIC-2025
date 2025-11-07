@@ -3,17 +3,15 @@ import os
 import json
 from sympy import limit
 from s3.s3_utils import get_neighbor_frames  # import hàm có sẵn
-#from src.search.search_service import ImageSearchService
-#from src.search.search_service import CaptionSearchService
+from src.search.search_service import ImageSearchService
+from src.search.search_service import CaptionSearchService
 
 from src.utils import mock_keys, mapping_topics  # import mock_keys và mapping_topics từ src/utils.py
 
 
 app = Flask(__name__)
-
-# Khởi tạo cả hai service
-#image_search_service = ImageSearchService(max_workers=64)
-#caption_search_service = CaptionSearchService(max_workers=64)
+image_search_service =ImageSearchService(max_workers=64) # only image search
+caption_search_service = CaptionSearchService(max_workers=64) # only caption search
 
 S3_BASE = "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com"
 CLOUDFRONT_BASE = "https://d1zgby2rss028i.cloudfront.net"
@@ -67,15 +65,14 @@ async def query_image():
 
     print(f"service={service}, topic_codes={topic_codes}")
     
-    mock_results = [f"{CLOUDFRONT_BASE}/{key}" for key in mock_keys]
+    print(topic_codes)
+
     
     # Chọn service phù hợp
     if service == "caption":
-        results = jsonify({"images": mock_results})
-        # results = await caption_search_service.process_with_executor(query=query, video_ids=topic_codes, flagValue=flagValue)
+        results = await caption_search_service.process_with_executor(query=query, video_ids=topic_codes, flagValue=flagValue)
     else:
-        results = jsonify({"images": mock_results})
-        # results = await image_search_service.process_with_executor(query=query, video_ids=topic_codes, flagValue=flagValue)
+        results = await image_search_service.process_with_executor(query=query, video_ids=topic_codes, flagValue=flagValue)
     return results
 
 

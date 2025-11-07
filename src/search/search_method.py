@@ -9,18 +9,19 @@ def image_search_1(text, embedding, qdrant_client_1,video_ids):
         limit=200,
         with_payload=True,
         search_params=models.SearchParams(
-        # hnsw_ef=1000,
-        exact=True
+        hnsw_ef=1000,
+        # indexed_only=True
+        # exact=True
         ),
-        # query_filter=models.Filter(
-        # should=[
-        #     models.FieldCondition(
-        #         key="path",
-        #         match=models.MatchText(text=vid)
-        #     )
-        #     for vid in video_ids
-        # ]
-        # ),
+        query_filter=models.Filter(
+        should=[
+            models.FieldCondition(
+                key="path",
+                match=models.MatchText(text=vid)
+            )
+            for vid in video_ids
+        ]
+        ),
         timeout=60
     )
     results = []
@@ -38,17 +39,17 @@ def image_search_2(text, embedding, qdrant_client_2,video_ids):
         limit=200,
         with_payload=True,
         search_params=models.SearchParams(
-        exact=True
+        hnsw_ef= 1000,
     ),
-    # query_filter=models.Filter(
-    #     should=[
-    #         models.FieldCondition(
-    #             key="path",
-    #             match=models.MatchText(text=vid)
-    #         )
-    #         for vid in video_ids
-    #     ]
-    # ),
+    query_filter=models.Filter(
+        should=[
+            models.FieldCondition(
+                key="path",
+                match=models.MatchText(text=vid)
+            )
+            for vid in video_ids
+        ]
+    ),
         timeout=60
     )
     results = []
@@ -74,11 +75,36 @@ def content_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
             query=dense_q,
             using="bge-m3",
             limit=200,
+            params=models.SearchParams(
+                indexed_only=True,
+                hnsw_ef=400
+            ),
+            filter=models.Filter(
+            should=[
+            models.FieldCondition(
+                key="video_name",
+                match=models.MatchText(text=vid)
+            )
+            for vid in video_ids
+        ]),
         ),
         models.Prefetch(
             query=sparse_q,
             using="bm25",
             limit=200,
+            params=models.SearchParams(
+                indexed_only=True,
+                hnsw_ef=400
+            ),
+            filter=models.Filter(
+            should=[
+            models.FieldCondition(
+                key="video_name",
+                match=models.MatchText(text=vid)
+            )
+            for vid in video_ids
+        ]
+    )
         ),
     ]
     results = client.query_points(
@@ -87,23 +113,13 @@ def content_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
             query=models.FusionQuery(
                 fusion=models.Fusion.RRF,
             ),
-            
             with_payload=True,
             limit=200,
             search_params=models.SearchParams(
                 exact=True
             ),
-            query_filter=models.Filter(
-            should=[
-            models.FieldCondition(
-                key="path",
-                match=models.MatchText(text=vid)
-            )
-            for vid in video_ids
-        ]
-    ),
             timeout=60
-        )
+    )
     video_dict = {}
     for point in results.points:
         score = point.score
@@ -132,11 +148,36 @@ def caption_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
             query=dense_q,
             using="bge-m3",
             limit=200,
+            params=models.SearchParams(
+                # hnsw_ef=600
+                exact=True
+            ),
+            filter=models.Filter(
+            should=[
+            models.FieldCondition(
+                key="path",
+                match=models.MatchText(text=vid)
+            )
+            for vid in video_ids
+        ])
         ),
         models.Prefetch(
             query=sparse_q,
             using="bm25",
             limit=200,
+            params=models.SearchParams(
+                # hnsw_ef=600
+                exact=True
+            ),
+            filter=models.Filter(
+            should=[
+            models.FieldCondition(
+                key="path",
+                match=models.MatchText(text=vid)
+            )
+            for vid in video_ids
+        ]
+    )
         ),
     ]
     results = client.query_points(
@@ -151,15 +192,6 @@ def caption_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
             search_params=models.SearchParams(
                 exact=True
             ),
-    #         query_filter=models.Filter(
-    #         should=[
-    #         models.FieldCondition(
-    #             key="path",
-    #             match=models.MatchText(text=vid)
-    #         )
-    #         for vid in video_ids
-    #     ]
-    # ),
             timeout=60
         )
     results = [

@@ -135,7 +135,7 @@ class ImageSearchService(BaseSearchService):
             # Bước 4: Deduplicate
             final_results = await self._deduplicate_results(retrieve_results, loop)
             
-            return jsonify({"images": final_results[:200]})
+            return jsonify({"images": final_results[:300]})
             
         except Exception as e:
             logger.error(f"Error in ImageSearchService._process_without_flag: {str(e)}")
@@ -277,7 +277,7 @@ class CaptionSearchService(BaseSearchService):
             # Bước 4: Deduplicate
             final_results = await self._deduplicate_results(caption_results, loop)
             
-            return jsonify({"images": final_results[:200]})
+            return jsonify({"images": final_results[:300]})
             
         except Exception as e:
             logger.error(f"Error in CaptionSearchService._process_without_flag: {str(e)}")
@@ -496,7 +496,7 @@ class CombinedSearchService(BaseSearchService):
             # Bước 4: Deduplicate
             final_results = await self._deduplicate_results(retrieve_results, loop)
             
-            return jsonify({"images": final_results[:200]})
+            return jsonify({"images": final_results[:300]})
             
         except Exception as e:
             logger.error(f"Error in CombinedSearchService._process_without_flag: {str(e)}")
