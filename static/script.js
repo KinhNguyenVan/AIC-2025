@@ -1,4 +1,79 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // --- State persistence helpers ---
+    function saveSearchState() {
+        const query = queryInput.value.trim();
+        const flagValue = document.getElementById("flagInput").value.trim();
+        const serviceValue = document.getElementById("serviceSelect")?.value || "image";
+        const selectedTopics = [];
+        document.querySelectorAll(".topic-checkbox:checked").forEach(cb => {
+            selectedTopics.push(cb.dataset.topic);
+        });
+        // Lấy danh sách ảnh đang hiển thị (nếu có)
+        const lastResults = Array.from(document.querySelectorAll("#imageContainer img.main-img")).map(i => i.dataset.url);
+        const state = {
+            query,
+            flagValue,
+            serviceValue,
+            selectedTopics,
+            selectedImages,
+            lastResults
+        };
+        localStorage.setItem("searchState", JSON.stringify(state));
+    }
+
+    function restoreSearchState() {
+        const stateStr = localStorage.getItem("searchState");
+        if (!stateStr) return;
+        try {
+            const state = JSON.parse(stateStr);
+            if (state.query !== undefined) {
+                const qi = document.querySelector(".input-group input");
+                if (qi) qi.value = state.query;
+            }
+            if (state.flagValue !== undefined) {
+                const fi = document.getElementById("flagInput");
+                if (fi) fi.value = state.flagValue;
+            }
+            if (state.serviceValue !== undefined && document.getElementById("serviceSelect")) document.getElementById("serviceSelect").value = state.serviceValue;
+            if (Array.isArray(state.selectedTopics)) {
+                document.querySelectorAll(".topic-checkbox").forEach(cb => {
+                    cb.checked = state.selectedTopics.includes(cb.dataset.topic);
+                });
+            }
+            // Nếu có kết quả trước đó, render lại chúng
+            if (Array.isArray(state.lastResults) && state.lastResults.length > 0) {
+                renderImages(state.lastResults);
+            }
+
+            if (Array.isArray(state.selectedImages)) {
+                selectedImages = state.selectedImages;
+                // Áp dụng tick trên các checkbox tương ứng và cập nhật badge
+                setTimeout(() => {
+                    document.querySelectorAll('.selectImg').forEach(cb => {
+                        const url = cb.dataset.url;
+                        if (selectedImages.includes(url)) {
+                            cb.checked = true;
+                        } else {
+                            cb.checked = false;
+                        }
+                    });
+                    // Cập nhật badge hiển thị thứ tự
+                    document.querySelectorAll('.selectImg').forEach(c => {
+                        const b = c.closest('.card').querySelector('.order-badge');
+                        const idx = selectedImages.indexOf(c.dataset.url);
+                        if (idx !== -1) {
+                            b.textContent = idx + 1;
+                            b.classList.remove('d-none');
+                        } else {
+                            b.classList.add('d-none');
+                        }
+                    });
+                    renderSelectedSidebar();
+                }, 50);
+            }
+        } catch {}
+    }
+
     let videoMapping = {};
 
     async function loadVideoMapping() {
@@ -31,13 +106,36 @@ document.addEventListener("DOMContentLoaded", () => {
     // Lưu danh sách ảnh được chọn theo thứ tự tick
     let selectedImages = [];
 
+    // Restore state on page load (moved here because necessary elements & vars exist now)
+    restoreSearchState();
+
+    // Clear saved state button (reset UI and remove localStorage)
+    const clearBtn = document.getElementById("clearSearchStateBtn");
+    if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+            if (!confirm("Clear saved search state? This will remove your saved query and selections.")) return;
+            localStorage.removeItem("searchState");
+            // Reset inputs
+            const qi = document.querySelector(".input-group input"); if (qi) qi.value = "";
+            const fi = document.getElementById("flagInput"); if (fi) fi.value = "";
+            const ss = document.getElementById("serviceSelect"); if (ss) ss.value = "image";
+            document.querySelectorAll(".topic-checkbox").forEach(cb => cb.checked = false);
+            // Clear results and selections
+            selectedImages = [];
+            imageContainer.innerHTML = "";
+            renderSelectedSidebar();
+            const sidebarImages = document.getElementById("sidebarImages"); if (sidebarImages) sidebarImages.innerHTML = "";
+            const currentFrame = document.getElementById("currentFrame"); if (currentFrame) currentFrame.innerHTML = "";
+            alert("Search state cleared.");
+        });
+    }
 
     // Hàm render ảnh ra imageContainer
     function renderImages(urls) {
         imageContainer.innerHTML = "";
         if (!urls || urls.length === 0) {
             imageContainer.innerHTML = "<p>No images found.</p>";
-            exportBtn.classList.add("d-none");
+            if (exportBtn) exportBtn.classList.add("d-none");
             return;
         }
 
@@ -350,7 +448,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const flagInputValue = document.getElementById("flagInput").value.trim();
-            
+            const serviceValue = document.getElementById("serviceSelect").value;
             // Lấy các topic được chọn từ checkbox (trả về danh sách tên topic)
             const selectedTopics = [];
             document.querySelectorAll(".topic-checkbox:checked").forEach(cb => {
@@ -370,12 +468,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({
                         query: query,
                         flagValue: flagInputValue,
-                        topics: selectedTopics
+                        topics: selectedTopics,
+                        service: serviceValue
                     })
                 });
 
                 const data = await res.json();
                 renderImages(data.images);
+                // Save state after search
+                saveSearchState();
             } catch (err) {
                 console.error("Error fetching images:", err);
                 alert("Failed to fetch images!");
@@ -384,6 +485,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
+
+    // Save state before leaving page
+    window.addEventListener("beforeunload", saveSearchState);
 
 
     // Toggle answer input theo kiểu QA

@@ -3,14 +3,15 @@ import os
 import json
 from sympy import limit
 from s3.s3_utils import get_neighbor_frames  # import hàm có sẵn
-from src.search.search_service import CombinedSearchService,CaptionSearchService,ImageSearchService
+from src.search.search_service import ImageSearchService
+from src.search.search_service import CaptionSearchService
 
 from src.utils import mock_keys, mapping_topics  # import mock_keys và mapping_topics từ src/utils.py
 
 
 app = Flask(__name__)
-search_service =ImageSearchService(max_workers=64) # only image search
-search_service2 = CaptionSearchService(max_workers=64) # only caption search
+image_search_service =ImageSearchService(max_workers=64) # only image search
+caption_search_service = CaptionSearchService(max_workers=64) # only caption search
 
 S3_BASE = "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com"
 CLOUDFRONT_BASE = "https://d1zgby2rss028i.cloudfront.net"
@@ -53,24 +54,26 @@ async def query_image():
     query = data.get("query", "") if data else ""
     flagValue = data.get("flagValue", "") if data else ""
     topics = data.get("topics", []) if data else []
-    
-    # # Convert topics sang mã code (nếu có)
+    service = data.get("service", "image") if data else "image"
+
+    # Convert topics sang mã code (nếu có)
     topic_codes = []
     if topics:
         for topic in topics:
             if topic in mapping_topics.keys():
                 topic_codes.extend(mapping_topics[topic])
 
+    print(f"service={service}, topic_codes={topic_codes}")
     
     print(topic_codes)
-    results = await search_service2.process_with_executor(query= query,video_ids=topic_codes,flagValue=flagValue)
-    return results
+
     
-    # For testing purpose, return mock results
-    # mock_results = [f"{CLOUDFRONT_BASE}/{key}" for key in mock_keys]
-    # return jsonify({"images": mock_results})
-    # # For production, use the search service
-    # return await search_service.process_with_executor(query, flagValue)
+    # Chọn service phù hợp
+    if service == "caption":
+        results = await caption_search_service.process_with_executor(query=query, video_ids=topic_codes, flagValue=flagValue)
+    else:
+        results = await image_search_service.process_with_executor(query=query, video_ids=topic_codes, flagValue=flagValue)
+    return results
 
 
 @app.route("/frames", methods=["GET"])
