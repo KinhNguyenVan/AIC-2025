@@ -3,8 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 from flask import jsonify
 import logging
 from src.search.model import gemini_model, clip_embedding, bgem3_embedding, bm25_embedding
-from src.search.qdrant_db import image_qdrant_client_1, image_qdrant_client_2, content_qdrant_client,caption_qdrant_client
-from src.search.search_method import image_search_1, image_search_2, content_search,caption_search
+from src.search.qdrant_db import image_qdrant_client_1, image_qdrant_client_2, content_qdrant_client,caption_qdrant_client,ocr_qdrant_client
+from src.search.search_method import image_search_1, image_search_2, content_search,caption_search,ocr_search
 from src.rerank.rerank import rerank_images
 from src.utils import deduplicate_and_sort,normalize_scores
 
@@ -272,7 +272,6 @@ class CaptionSearchService(BaseSearchService):
             
             # Bước 3: Normalize
             caption_results = normalize_scores(caption_results)
-            print("caption", caption_results)
             
             # Bước 4: Deduplicate
             final_results = await self._deduplicate_results(caption_results, loop)
@@ -516,6 +515,133 @@ class CombinedSearchService(BaseSearchService):
         else:
             # Không có content -> chỉ deduplicate
             return await self._deduplicate_results(image_results, loop)
+
+    async def _deduplicate_results(self, results, loop):
+        """Deduplicate và format results"""
+        if results:
+            deduplicated_results = await loop.run_in_executor(
+                self.executor,
+                deduplicate_and_sort,
+                results
+            )
+            return [f"{CLOUDFRONT_BASE}/{res['path']}" for res in deduplicated_results]
+        else:
+            return []
+
+class OCRSearchService(BaseSearchService):
+    """Service chuyên cho ocr search"""
+    
+    async def process_with_executor(self, query,video_ids, flagValue=""):
+        """Main method để xử lý ocr search request"""
+        try:
+            if not query:
+                return jsonify({"error": "Query is required"}), 400
+            
+            loop = asyncio.get_event_loop()
+            
+            if flagValue:
+                return await self._process_with_flag(query, flagValue, loop,video_ids)
+            else:
+                return await self._process_without_flag(query, loop,video_ids)
+                
+        except Exception as e:
+            logger.error(f"Error in OCRSearchService.process_with_executor: {str(e)}")
+            return jsonify({"error": "Internal server error"}), 500
+
+    async def _process_with_flag(self, query, flagValue, loop,video_ids):
+        """Xử lý ocr search khi có flagValue"""
+        try:
+            # Bước 1: Chạy gemini và content search song song
+            gemini_future = self._generate_query_with_gemini(query, loop)
+            content_future = self._get_content_results(flagValue, loop,video_ids)
+            
+            eng_query, content_results = await asyncio.gather(
+                gemini_future, 
+                content_future,
+                return_exceptions=True
+            )
+            
+            # Xử lý lỗi
+            if isinstance(eng_query, Exception):
+                eng_query = query
+            if isinstance(content_results, Exception):
+                content_results = []
+            
+            # Bước 2: Tìm kiếm ocr
+            ocr_results = await self._search_ocrs(eng_query, loop,video_ids)
+            
+            # Bước 3: Normalize
+            ocr_results = normalize_scores(ocr_results)
+            
+            # Bước 4: Rerank hoặc deduplicate
+            final_results = await self._process_final_results(
+                ocr_results, content_results, loop
+            )
+            
+            return jsonify({"images": final_results[:300]})
+            
+        except Exception as e:
+            logger.error(f"Error in OCRSearchService._process_with_flag: {str(e)}")
+            return await self._process_without_flag(query, loop)
+
+    async def _process_without_flag(self, query, loop,video_ids):
+        """Xử lý ocr search khi không có flagValue"""
+        try:
+            # Bước 1: Generate query với gemini
+            eng_query = await self._generate_query_with_gemini(query, loop)
+            
+            # Bước 2: Tìm kiếm ocr
+            ocr_results = await self._search_ocrs(eng_query, loop,video_ids)
+            
+            # Bước 3: Normalize
+            ocr_results = normalize_scores(ocr_results)
+            
+            # Bước 4: Deduplicate
+            final_results = await self._deduplicate_results(ocr_results, loop)
+            
+            return jsonify({"images": final_results[:300]})
+            
+        except Exception as e:
+            logger.error(f"Error in OCRSearchService._process_without_flag: {str(e)}")
+            return jsonify({"images": []}), 500
+
+    async def _search_ocrs(self, eng_query, loop,video_ids):
+        """Tìm kiếm ocr"""
+        try:
+            ocr_results = await loop.run_in_executor(
+                self.executor,
+                ocr_search, 
+                eng_query, 
+                bgem3_embedding, 
+                bm25_embedding, 
+                ocr_qdrant_client,
+                video_ids
+            )
+            
+            if isinstance(ocr_results, Exception):
+                logger.error(f"ocr search error: {ocr_results}")
+                return []
+            
+            return ocr_results
+            
+        except Exception as e:
+            logger.error(f"Error in _search_ocrs: {e}")
+            return []
+
+    async def _process_final_results(self, ocr_results, content_results, loop):
+        """Xử lý kết quả cuối cùng với rerank hoặc deduplicate"""
+        if ocr_results and content_results:
+            # Có cả ocr và content results -> rerank
+            reranked_results = await loop.run_in_executor(
+                self.executor,
+                rerank_images, 
+                ocr_results, 
+                content_results
+            )
+            return [f"{CLOUDFRONT_BASE}/{res['path']}" for res in reranked_results]
+        else:
+            # Không có content -> chỉ deduplicate
+            return await self._deduplicate_results(ocr_results, loop)
 
     async def _deduplicate_results(self, results, loop):
         """Deduplicate và format results"""

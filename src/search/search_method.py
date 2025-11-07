@@ -76,8 +76,9 @@ def content_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
             using="bge-m3",
             limit=200,
             params=models.SearchParams(
-                indexed_only=True,
-                hnsw_ef=400
+                # indexed_only=True,
+                # hnsw_ef=400
+                exact=True
             ),
             filter=models.Filter(
             should=[
@@ -92,10 +93,11 @@ def content_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
             query=sparse_q,
             using="bm25",
             limit=200,
-            params=models.SearchParams(
-                indexed_only=True,
-                hnsw_ef=400
-            ),
+            # params=models.SearchParams(
+            #     # indexed_only=True,
+            #     # hnsw_ef=400
+            #     exact=True
+            # ),
             filter=models.Filter(
             should=[
             models.FieldCondition(
@@ -149,6 +151,77 @@ def caption_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
             using="bge-m3",
             limit=200,
             params=models.SearchParams(
+                hnsw_ef=800
+                # exact=True
+            ),
+            filter=models.Filter(
+            should=[
+            models.FieldCondition(
+                key="path",
+                match=models.MatchText(text=vid)
+            )
+            for vid in video_ids
+        ])
+        ),
+        models.Prefetch(
+            query=sparse_q,
+            using="bm25",
+            limit=200,
+            # params=models.SearchParams(
+            #     hnsw_ef=800
+            #     # exact=True
+            # ),
+            filter=models.Filter(
+            should=[
+            models.FieldCondition(
+                key="path",
+                match=models.MatchText(text=vid)
+            )
+            for vid in video_ids
+        ]
+    )
+        ),
+    ]
+    results = client.query_points(
+            "caption-collection",
+            prefetch=prefetch,
+            query=models.FusionQuery(
+                fusion=models.Fusion.RRF,
+                
+            ),
+            
+            with_payload=True,
+            limit=200,
+            search_params=models.SearchParams(
+                exact=True
+            ),
+            timeout=60
+        )
+    results = [
+    {
+        "path": point.payload["path"],
+        "score": float(point.score)  # ép sang float để gọn giống log
+    }
+    for point in results.points
+    ]
+
+    return results
+
+def ocr_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
+    query = text
+
+    dense_q = bgem3_embedding.embed_query(query)
+    sparse_list = list(bm25_embedding.passage_embed(query))
+    sparse_q = models.SparseVector(
+            indices=sparse_list[0].indices.tolist(),
+            values=sparse_list[0].values.tolist()
+        )
+    prefetch = [
+        models.Prefetch(
+            query=dense_q,
+            using="bge-m3",
+            limit=200,
+            params=models.SearchParams(
                 # hnsw_ef=600
                 exact=True
             ),
@@ -165,10 +238,6 @@ def caption_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
             query=sparse_q,
             using="bm25",
             limit=200,
-            params=models.SearchParams(
-                # hnsw_ef=600
-                exact=True
-            ),
             filter=models.Filter(
             should=[
             models.FieldCondition(
@@ -181,7 +250,7 @@ def caption_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
         ),
     ]
     results = client.query_points(
-            "caption-collection",
+            "ocr_collection",
             prefetch=prefetch,
             query=models.FusionQuery(
                 fusion=models.Fusion.RRF,

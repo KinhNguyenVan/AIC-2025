@@ -5,6 +5,7 @@ from sympy import limit
 from s3.s3_utils import get_neighbor_frames  # import hàm có sẵn
 from src.search.search_service import ImageSearchService
 from src.search.search_service import CaptionSearchService
+from src.search.search_service import OCRSearchService
 
 from src.utils import mock_keys, mapping_topics  # import mock_keys và mapping_topics từ src/utils.py
 
@@ -12,7 +13,7 @@ from src.utils import mock_keys, mapping_topics  # import mock_keys và mapping_
 app = Flask(__name__)
 image_search_service =ImageSearchService(max_workers=64) # only image search
 caption_search_service = CaptionSearchService(max_workers=64) # only caption search
-
+ocr_search_service = OCRSearchService(max_workers=64)
 S3_BASE = "https://aic-bucket-hcmus.s3.ap-southeast-2.amazonaws.com"
 CLOUDFRONT_BASE = "https://d1zgby2rss028i.cloudfront.net"
 
@@ -71,6 +72,8 @@ async def query_image():
     # Chọn service phù hợp
     if service == "caption":
         results = await caption_search_service.process_with_executor(query=query, video_ids=topic_codes, flagValue=flagValue)
+    elif service == "ocr":
+        results = await ocr_search_service.process_with_executor(query=query, video_ids=topic_codes, flagValue=flagValue)
     else:
         results = await image_search_service.process_with_executor(query=query, video_ids=topic_codes, flagValue=flagValue)
     return results

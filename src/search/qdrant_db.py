@@ -22,3 +22,7 @@ caption_qdrant_client = QdrantClient(
     url= os.getenv("CAPTION_QDRANT_URL"),
     api_key=os.getenv("CAPTION_QDRANT_API_KEY")
 )
+ocr_qdrant_client = QdrantClient(
+    url= os.getenv("OCR_QDRANT_URL"),
+    api_key = os.getenv("OCR_QDRANT_API_KEY")
+)
