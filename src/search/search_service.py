@@ -38,7 +38,7 @@ class BaseSearchService:
             logger.error(f"Gemini error: {e}")
             return query  # Fallback về query gốc
 
-    async def _get_content_results(self, flagValue, loop):
+    async def _get_content_results(self, flagValue, loop,video_ids):
         """Lấy content results nếu có flagValue"""
         if not flagValue:
             return []
@@ -50,7 +50,8 @@ class BaseSearchService:
                 flagValue, 
                 bgem3_embedding, 
                 bm25_embedding, 
-                content_qdrant_client
+                content_qdrant_client,
+                video_ids
             )
             return content_results if not isinstance(content_results, Exception) else []
         except Exception as e:
@@ -61,7 +62,7 @@ class BaseSearchService:
 class ImageSearchService(BaseSearchService):
     """Service chuyên cho image search"""
     
-    async def process_with_executor(self, query, flagValue=""):
+    async def process_with_executor(self, query,video_ids ,flagValue=""):
         """Main method để xử lý image search request"""
         try:
             if not query:
@@ -70,20 +71,20 @@ class ImageSearchService(BaseSearchService):
             loop = asyncio.get_event_loop()
             
             if flagValue:
-                return await self._process_with_flag(query, flagValue, loop)
+                return await self._process_with_flag(query, flagValue, loop,video_ids)
             else:
-                return await self._process_without_flag(query, loop)
+                return await self._process_without_flag(query, loop,video_ids)
                 
         except Exception as e:
             logger.error(f"Error in ImageSearchService.process_with_executor: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
 
-    async def _process_with_flag(self, query, flagValue, loop):
+    async def _process_with_flag(self, query, flagValue, loop,video_ids):
         """Xử lý image search khi có flagValue"""
         try:
             # Bước 1: Chạy gemini và content search song song
             gemini_future = self._generate_query_with_gemini(query, loop)
-            content_future = self._get_content_results(flagValue, loop)
+            content_future = self._get_content_results(flagValue, loop,video_ids)
             
             eng_query, content_results = await asyncio.gather(
                 gemini_future, 
@@ -98,7 +99,7 @@ class ImageSearchService(BaseSearchService):
                 content_results = []
             
             # Bước 2: Tìm kiếm ảnh từ 2 client song song
-            image_results_1, image_results_2 = await self._search_images_parallel(eng_query, loop)
+            image_results_1, image_results_2 = await self._search_images_parallel(eng_query, loop,video_ids)
             
             # Bước 3: Normalize và combine results
             image_results_1 = normalize_scores(image_results_1)
@@ -116,7 +117,7 @@ class ImageSearchService(BaseSearchService):
             logger.error(f"Error in ImageSearchService._process_with_flag: {str(e)}")
             return await self._process_without_flag(query, loop)
 
-    async def _process_without_flag(self, query, loop):
+    async def _process_without_flag(self, query, loop,video_ids):
         """Xử lý image search khi không có flagValue"""
         try:
             # Bước 1: Generate query với gemini
@@ -124,7 +125,7 @@ class ImageSearchService(BaseSearchService):
             print("eng_query", eng_query)
             
             # Bước 2: Tìm kiếm ảnh từ 2 client song song
-            image_results_1, image_results_2 = await self._search_images_parallel(eng_query, loop)
+            image_results_1, image_results_2 = await self._search_images_parallel(eng_query, loop,video_ids)
             
             # Bước 3: Normalize và combine
             image_results_1 = normalize_scores(image_results_1)
@@ -140,21 +141,23 @@ class ImageSearchService(BaseSearchService):
             logger.error(f"Error in ImageSearchService._process_without_flag: {str(e)}")
             return jsonify({"images": []}), 500
 
-    async def _search_images_parallel(self, eng_query, loop):
+    async def _search_images_parallel(self, eng_query, loop,video_ids):
         """Tìm kiếm ảnh từ 2 client song song"""
         img1_future = loop.run_in_executor(
             self.executor,
             image_search_1, 
             eng_query, 
             clip_embedding, 
-            image_qdrant_client_1
+            image_qdrant_client_1,
+            video_ids
         )
         img2_future = loop.run_in_executor(
             self.executor,
             image_search_2, 
             eng_query, 
             clip_embedding, 
-            image_qdrant_client_2
+            image_qdrant_client_2,
+            video_ids
         )
         
         image_results_1, image_results_2 = await asyncio.gather(
@@ -205,7 +208,7 @@ class ImageSearchService(BaseSearchService):
 class CaptionSearchService(BaseSearchService):
     """Service chuyên cho caption search"""
     
-    async def process_with_executor(self, query, flagValue=""):
+    async def process_with_executor(self, query,video_ids, flagValue=""):
         """Main method để xử lý caption search request"""
         try:
             if not query:
@@ -214,20 +217,20 @@ class CaptionSearchService(BaseSearchService):
             loop = asyncio.get_event_loop()
             
             if flagValue:
-                return await self._process_with_flag(query, flagValue, loop)
+                return await self._process_with_flag(query, flagValue, loop,video_ids)
             else:
-                return await self._process_without_flag(query, loop)
+                return await self._process_without_flag(query, loop,video_ids)
                 
         except Exception as e:
             logger.error(f"Error in CaptionSearchService.process_with_executor: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
 
-    async def _process_with_flag(self, query, flagValue, loop):
+    async def _process_with_flag(self, query, flagValue, loop,video_ids):
         """Xử lý caption search khi có flagValue"""
         try:
             # Bước 1: Chạy gemini và content search song song
             gemini_future = self._generate_query_with_gemini(query, loop)
-            content_future = self._get_content_results(flagValue, loop)
+            content_future = self._get_content_results(flagValue, loop,video_ids)
             
             eng_query, content_results = await asyncio.gather(
                 gemini_future, 
@@ -242,7 +245,7 @@ class CaptionSearchService(BaseSearchService):
                 content_results = []
             
             # Bước 2: Tìm kiếm caption
-            caption_results = await self._search_captions(eng_query, loop)
+            caption_results = await self._search_captions(eng_query, loop,video_ids)
             
             # Bước 3: Normalize
             caption_results = normalize_scores(caption_results)
@@ -258,14 +261,14 @@ class CaptionSearchService(BaseSearchService):
             logger.error(f"Error in CaptionSearchService._process_with_flag: {str(e)}")
             return await self._process_without_flag(query, loop)
 
-    async def _process_without_flag(self, query, loop):
+    async def _process_without_flag(self, query, loop,video_ids):
         """Xử lý caption search khi không có flagValue"""
         try:
             # Bước 1: Generate query với gemini
             eng_query = await self._generate_query_with_gemini(query, loop)
             
             # Bước 2: Tìm kiếm caption
-            caption_results = await self._search_captions(eng_query, loop)
+            caption_results = await self._search_captions(eng_query, loop,video_ids)
             
             # Bước 3: Normalize
             caption_results = normalize_scores(caption_results)
@@ -280,7 +283,7 @@ class CaptionSearchService(BaseSearchService):
             logger.error(f"Error in CaptionSearchService._process_without_flag: {str(e)}")
             return jsonify({"images": []}), 500
 
-    async def _search_captions(self, eng_query, loop):
+    async def _search_captions(self, eng_query, loop,video_ids):
         """Tìm kiếm caption"""
         try:
             caption_results = await loop.run_in_executor(
@@ -289,7 +292,8 @@ class CaptionSearchService(BaseSearchService):
                 eng_query, 
                 bgem3_embedding, 
                 bm25_embedding, 
-                caption_qdrant_client
+                caption_qdrant_client,
+                video_ids
             )
             
             if isinstance(caption_results, Exception):

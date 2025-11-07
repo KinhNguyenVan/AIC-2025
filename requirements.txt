@@ -12,6 +12,3 @@ fastembed
 sentence-transformers
 flask[async]
 google-generative-ai
-
-
-

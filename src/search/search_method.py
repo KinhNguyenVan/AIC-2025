@@ -1,7 +1,7 @@
 from qdrant_client.http.models import Distance, VectorParams
 from qdrant_client.http import models
 
-def image_search_1(text, embedding, qdrant_client_1):
+def image_search_1(text, embedding, qdrant_client_1,video_ids):
     text_features = embedding.encode_text(text)
     search_result = qdrant_client_1.search(
         collection_name="image_clip_vectors",
@@ -12,6 +12,15 @@ def image_search_1(text, embedding, qdrant_client_1):
         # hnsw_ef=1000,
         exact=True
         ),
+        # query_filter=models.Filter(
+        # should=[
+        #     models.FieldCondition(
+        #         key="path",
+        #         match=models.MatchText(text=vid)
+        #     )
+        #     for vid in video_ids
+        # ]
+        # ),
         timeout=60
     )
     results = []
@@ -21,7 +30,7 @@ def image_search_1(text, embedding, qdrant_client_1):
         results.append(payload)
     return results
 
-def image_search_2(text, embedding, qdrant_client_2):
+def image_search_2(text, embedding, qdrant_client_2,video_ids):
     text_features = embedding.encode_text(text)
     search_result = qdrant_client_2.search(
         collection_name="image_clip_vectors",
@@ -31,6 +40,15 @@ def image_search_2(text, embedding, qdrant_client_2):
         search_params=models.SearchParams(
         exact=True
     ),
+    # query_filter=models.Filter(
+    #     should=[
+    #         models.FieldCondition(
+    #             key="path",
+    #             match=models.MatchText(text=vid)
+    #         )
+    #         for vid in video_ids
+    #     ]
+    # ),
         timeout=60
     )
     results = []
@@ -42,7 +60,7 @@ def image_search_2(text, embedding, qdrant_client_2):
 
 
 
-def content_search(text,bgem3_embedding,bm25_embedding,client):
+def content_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
     query = text
 
     dense_q = bgem3_embedding.embed_query(query)
@@ -55,12 +73,12 @@ def content_search(text,bgem3_embedding,bm25_embedding,client):
         models.Prefetch(
             query=dense_q,
             using="bge-m3",
-            limit=100,
+            limit=200,
         ),
         models.Prefetch(
             query=sparse_q,
             using="bm25",
-            limit=100,
+            limit=200,
         ),
     ]
     results = client.query_points(
@@ -71,10 +89,19 @@ def content_search(text,bgem3_embedding,bm25_embedding,client):
             ),
             
             with_payload=True,
-            limit=100,
+            limit=200,
             search_params=models.SearchParams(
                 exact=True
             ),
+            query_filter=models.Filter(
+            should=[
+            models.FieldCondition(
+                key="path",
+                match=models.MatchText(text=vid)
+            )
+            for vid in video_ids
+        ]
+    ),
             timeout=60
         )
     video_dict = {}
@@ -91,7 +118,7 @@ def content_search(text,bgem3_embedding,bm25_embedding,client):
     return result_list
 
 
-def caption_search(text,bgem3_embedding,bm25_embedding,client):
+def caption_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
     query = text
 
     dense_q = bgem3_embedding.embed_query(query)
@@ -124,6 +151,15 @@ def caption_search(text,bgem3_embedding,bm25_embedding,client):
             search_params=models.SearchParams(
                 exact=True
             ),
+    #         query_filter=models.Filter(
+    #         should=[
+    #         models.FieldCondition(
+    #             key="path",
+    #             match=models.MatchText(text=vid)
+    #         )
+    #         for vid in video_ids
+    #     ]
+    # ),
             timeout=60
         )
     results = [
