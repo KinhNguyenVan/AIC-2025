@@ -552,11 +552,11 @@ class OCRSearchService(BaseSearchService):
         """Xử lý ocr search khi có flagValue"""
         try:
             # Bước 1: Chạy gemini và content search song song
-            gemini_future = self._generate_query_with_gemini(query, loop)
+            # gemini_future = self._generate_query_with_gemini(query, loop)
             content_future = self._get_content_results(flagValue, loop,video_ids)
-            
-            eng_query, content_results = await asyncio.gather(
-                gemini_future, 
+            eng_query = None
+            content_results = await asyncio.gather(
+                # gemini_future, 
                 content_future,
                 return_exceptions=True
             )
@@ -588,10 +588,10 @@ class OCRSearchService(BaseSearchService):
         """Xử lý ocr search khi không có flagValue"""
         try:
             # Bước 1: Generate query với gemini
-            eng_query = await self._generate_query_with_gemini(query, loop)
+            # eng_query = await self._generate_query_with_gemini(query, loop)
             
             # Bước 2: Tìm kiếm ocr
-            ocr_results = await self._search_ocrs(eng_query, loop,video_ids)
+            ocr_results = await self._search_ocrs(query, loop,video_ids)
             
             # Bước 3: Normalize
             ocr_results = normalize_scores(ocr_results)
