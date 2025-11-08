@@ -528,33 +528,58 @@ document.addEventListener("DOMContentLoaded", () => {
             const items = selectedImages.map(url => getVideoAndFrame(url));
 
             if (type === "kis") {
-                if (items.length !== 2) {
-                    alert("KIS: Cần chọn đúng 2 frame.");
+                if (items.length === 0) {
+                    alert("KIS: Cần chọn ít nhất 1 frame.");
                     return;
                 }
-                const sameVideo = items[0].videoName === items[1].videoName;
-                if (!sameVideo) {
-                    alert("KIS: 2 frame phải thuộc cùng 1 video.");
-                    return;
+                // If only 1 selected, use it as both start and end
+                if (items.length === 1) {
+                    const { videoName, frameNumber } = items[0];
+                    const startMs = frameToMs(videoName, frameNumber);
+                    const endMs = startMs;
+                    const body = {
+                        answerSets: [
+                            {
+                                answers: [
+                                    {
+                                        mediaItemName: videoName,
+                                        start: startMs,
+                                        end: endMs
+                                    }
+                                ]
+                            }
+                        ]
+                    };
+                    resultOutput.value = JSON.stringify(body, null, 2);
+                    lastPreparedBody = body;
+                } else {
+                    // More than 1 selected: take first two frames
+                    const first = items[0];
+                    const second = items[1];
+                    const sameVideo = first.videoName === second.videoName;
+                    if (!sameVideo) {
+                        alert("KIS: 2 frame phải thuộc cùng 1 video.");
+                        return;
+                    }
+                    const videoName = first.videoName;
+                    const startMs = frameToMs(videoName, first.frameNumber);
+                    const endMs = frameToMs(videoName, second.frameNumber);
+                    const body = {
+                        answerSets: [
+                            {
+                                answers: [
+                                    {
+                                        mediaItemName: videoName,
+                                        start: startMs,
+                                        end: endMs
+                                    }
+                                ]
+                            }
+                        ]
+                    };
+                    resultOutput.value = JSON.stringify(body, null, 2);
+                    lastPreparedBody = body;
                 }
-                const videoName = items[0].videoName;
-                const startMs = frameToMs(videoName, items[0].frameNumber);
-                const endMs = frameToMs(videoName, items[1].frameNumber);
-                const body = {
-                    answerSets: [
-                        {
-                            answers: [
-                                {
-                                    mediaItemName: videoName,
-                                    start: startMs,
-                                    end: endMs
-                                }
-                            ]
-                        }
-                    ]
-                };
-                resultOutput.value = JSON.stringify(body, null, 2);
-                lastPreparedBody = body;
             } else if (type === "qa") {
                 if (items.length !== 1) {
                     alert("QA: Cần chọn đúng 1 frame.");
