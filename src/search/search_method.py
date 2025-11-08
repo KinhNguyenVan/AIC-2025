@@ -222,8 +222,8 @@ def ocr_search(text,bgem3_embedding,bm25_embedding,client,video_ids):
             using="bge-m3",
             limit=200,
             params=models.SearchParams(
-                # hnsw_ef=600
-                exact=True
+                hnsw_ef=600
+                # exact=True
             ),
             filter=models.Filter(
             should=[

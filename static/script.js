@@ -412,7 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const frame = Math.round(seconds * fps);
 
         // Copy vào clipboard luôn
-        navigator.clipboard.writeText(seconds).then(() => {
+        navigator.clipboard.writeText(frame).then(() => {
             alert(`🎬 Video: ${currentVideoName}\n⏱ Seconds: ${seconds.toFixed(3)}\n🖼 Frame: ${frame}\n(Đã copy vào clipboard)`);
         });
     });

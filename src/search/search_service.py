@@ -554,21 +554,29 @@ class OCRSearchService(BaseSearchService):
             # Bước 1: Chạy gemini và content search song song
             # gemini_future = self._generate_query_with_gemini(query, loop)
             content_future = self._get_content_results(flagValue, loop,video_ids)
-            eng_query = None
-            content_results = await asyncio.gather(
-                # gemini_future, 
+            # gemini is currently disabled here so use the original query as eng_query
+            eng_query = query
+
+            # run content search and handle exceptions/unwrap result
+            gathered = await asyncio.gather(
+                # gemini_future,
                 content_future,
-                return_exceptions=True
+                return_exceptions=True,
             )
+            # gathered is a tuple/list with one element (the content_future result)
+            content_results = []
+            if gathered:
+                first = gathered[0]
+                if isinstance(first, Exception):
+                    logger.error(f"Content search raised: {first}")
+                    content_results = []
+                else:
+                    content_results = first
             
-            # Xử lý lỗi
-            if isinstance(eng_query, Exception):
+            # Bước 2: Tìm kiếm ocr (eng_query guaranteed to be a string)
+            if eng_query is None:
                 eng_query = query
-            if isinstance(content_results, Exception):
-                content_results = []
-            
-            # Bước 2: Tìm kiếm ocr
-            ocr_results = await self._search_ocrs(eng_query, loop,video_ids)
+            ocr_results = await self._search_ocrs(eng_query, loop, video_ids)
             
             # Bước 3: Normalize
             ocr_results = normalize_scores(ocr_results)
@@ -582,7 +590,7 @@ class OCRSearchService(BaseSearchService):
             
         except Exception as e:
             logger.error(f"Error in OCRSearchService._process_with_flag: {str(e)}")
-            return await self._process_without_flag(query, loop)
+            return await self._process_without_flag(query, loop, video_ids)
 
     async def _process_without_flag(self, query, loop,video_ids):
         """Xử lý ocr search khi không có flagValue"""
@@ -608,6 +616,7 @@ class OCRSearchService(BaseSearchService):
     async def _search_ocrs(self, eng_query, loop,video_ids):
         """Tìm kiếm ocr"""
         try:
+            print("vie query:",eng_query)
             ocr_results = await loop.run_in_executor(
                 self.executor,
                 ocr_search, 
