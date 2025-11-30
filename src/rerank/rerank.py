@@ -37,7 +37,7 @@ def rerank_images(image_results, content_results):
         key=lambda v: content_scores.get(v, 0),
         reverse=True
     )
-
+    
     # Rerank kết quả
     reranked_results = []
     for v in sorted_videos:
